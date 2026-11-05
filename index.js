@@ -1054,8 +1054,9 @@ async function finalizeVoting(chatId, ctx) {
       `📢 **투표 결과 발표!**\n\n` +
       `최다 득표자 [ **${convicted.name}** ] 님이 **${maxVotes}표**를 받아 라이어로 최종 지목되었습니다!\n\n` +
       `🎉 **검거 성공! [${convicted.title}] ${convicted.name} 님은 🤥 라이어가 맞았습니다!**\n\n` +
-      `🎯 진짜 제시어: [ **${game.word}** ]\n\n` +
-      `💡 **라이어의 마지막 찬스!** 제시어를 채팅으로 말해보세요:`,
+      `💡 **라이어의 마지막 찬스!**\n` +
+      `라이어 [${convicted.title}] **${convicted.name}** 님, 진짜 제시어가 무엇이었는지 채팅으로 외쳐보세요!\n` +
+      `맞히면 라이어 역전승, 틀리면 시민 승리!`,
       { parse_mode: 'Markdown', ...liarButtons }
     );
   } else {
