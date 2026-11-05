@@ -1,12 +1,12 @@
 {
   "1204945384": {
     "name": "우성 이",
-    "points": 1493999,
+    "points": 7403999,
     "lastBeg": 1793854205075,
-    "raceCount": 14,
-    "wins": 10,
-    "maxOdds": 7,
-    "maxProfit": 612000,
+    "raceCount": 25,
+    "wins": 12,
+    "maxOdds": 60.8,
+    "maxProfit": 5980000,
     "begCount": 0,
     "bankruptHit": false,
     "allInWon": true,
@@ -29,28 +29,30 @@
   },
   "1295849165": {
     "name": "동현 서",
-    "points": 2000,
-    "lastBeg": 1793865897808,
-    "raceCount": 1,
+    "points": 0,
+    "lastBeg": 1793871122175,
+    "raceCount": 11,
     "wins": 0,
     "maxOdds": 0,
     "maxProfit": 0,
-    "begCount": 1,
+    "begCount": 10,
     "bankruptHit": true,
     "allInWon": false,
     "unlockedTitles": [
-      "t_bankrupt"
+      "t_bankrupt",
+      "t_cleaner",
+      "t_gambler"
     ]
   },
   "7674751132": {
     "name": "김지현",
-    "points": 25600,
-    "lastBeg": 1793864261547,
-    "raceCount": 10,
+    "points": 2000,
+    "lastBeg": 1793871159947,
+    "raceCount": 12,
     "wins": 3,
     "maxOdds": 6.5,
     "maxProfit": 66000,
-    "begCount": 13,
+    "begCount": 15,
     "bankruptHit": true,
     "allInWon": true,
     "unlockedTitles": [
@@ -64,7 +66,8 @@
       "t_bankrupt",
       "t_cleaner",
       "t_allin",
-      "t_gambler"
+      "t_gambler",
+      "t_worker"
     ],
     "activeTitle": "깡통 계좌"
   },

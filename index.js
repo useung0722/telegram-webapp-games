@@ -447,7 +447,7 @@ async function sendHelp(ctx) {
     '• `/경마` (또는 `/race`) : 경마 대회 대기실 오픈\n' +
     '• `/지갑` (또는 `/wallet`) : 내 포인트 잔액 확인 (기본 10,000P)\n' +
     '• `/랭킹` (또는 `/rank`) : 사내 부자 순위 TOP 10\n' +
-    '• `/구걸` (또는 `/beg`) : 탕비실 분리수거 알바 (+2,000P 충전)\n\n' +
+    '• `/구걸` (또는 `/beg`) : 탕비실 분리수거 알바 (+5,000P 충전)\n\n' +
     '🤥 **라이어 게임 (커피 내기)**\n' +
     '• `/게임` (또는 `/game`) : 라이어 게임 대기실 생성\n' +
     '• `/끌올` (또는 `/up`) : 대기실 카드를 맨 아래로 재소환\n' +
@@ -504,17 +504,17 @@ function handleBeg(ctx) {
     return ctx.reply(`🙄 아직 ${w.points.toLocaleString()} P나 있으면서 구걸을 하시게요? 5,000 P 미만일 때만 가능합니다!`);
   }
 
-  if (now - w.lastBeg < 180000) {
-    const remainSec = Math.ceil((180000 - (now - w.lastBeg)) / 1000);
+  if (now - w.lastBeg < 10000) {
+    const remainSec = Math.ceil((10000 - (now - w.lastBeg)) / 1000);
     return ctx.reply(`⏳ 탕비실 청소 알바 쿨타임 중입니다! (${remainSec}초 후 가능)`);
   }
 
-  w.points += 2000;
+  w.points += 5000;
   w.lastBeg = now;
   w.begCount = (w.begCount || 0) + 1;
   checkAndUnlockTitles(w);
   saveWallets();
-  return ctx.reply(`🧹 탕비실 분리수거 알바 완료! **+2,000 P** 충전되었습니다.\n현재 잔액: **${w.points.toLocaleString()} P**`, {
+  return ctx.reply(`🧹 탕비실 분리수거 알바 완료! **+5,000 P** 충전되었습니다.\n현재 잔액: **${w.points.toLocaleString()} P**`, {
     parse_mode: 'Markdown',
     ...getGameActionButtons()
   });
@@ -565,17 +565,17 @@ bot.action('cmd_beg', async (ctx) => {
     return ctx.answerCbQuery(`🙄 알바 불가!\n잔액이 5,000 P 이상이면 알바를 할 수 없습니다.\n(현재 잔액: ${w.points.toLocaleString()} P)`, { show_alert: true });
   }
 
-  if (now - w.lastBeg < 180000) {
-    const remainSec = Math.ceil((180000 - (now - w.lastBeg)) / 1000);
+  if (now - w.lastBeg < 10000) {
+    const remainSec = Math.ceil((10000 - (now - w.lastBeg)) / 1000);
     return ctx.answerCbQuery(`⏳ 탕비실 청소 알바 쿨타임 중!\n${remainSec}초 후에 다시 가능합니다.`, { show_alert: true });
   }
 
-  w.points += 2000;
+  w.points += 5000;
   w.lastBeg = now;
   w.begCount = (w.begCount || 0) + 1;
   checkAndUnlockTitles(w);
   saveWallets();
-  return ctx.answerCbQuery(`🧹 탕비실 분리수거 알바 완료! (+2,000 P)\n현재 잔액: ${w.points.toLocaleString()} P`, { show_alert: true });
+  return ctx.answerCbQuery(`🧹 탕비실 분리수거 알바 완료! (+5,000 P)\n현재 잔액: ${w.points.toLocaleString()} P`, { show_alert: true });
 });
 
 bot.action('cmd_rank', async (ctx) => {
