@@ -677,8 +677,35 @@ async function handleTitle(ctx) {
 }
 
 bot.action('cmd_title', async (ctx) => {
-  await ctx.answerCbQuery();
-  return handleTitle(ctx);
+  const user = ctx.from;
+  const name = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+  const w = getWallet(user.id, name);
+  checkAndUnlockTitles(w);
+  saveWallets();
+
+  const activeStr = w.activeTitle ? `[${w.activeTitle}]` : '(없음)';
+  const unlockedIds = new Set(w.unlockedTitles || []);
+  const unlockedTitles = TITLE_DEFINITIONS.filter(t => unlockedIds.has(t.id));
+
+  let listLines = '';
+  if (unlockedTitles.length > 0) {
+    listLines = unlockedTitles.map(t => {
+      const isCur = (w.activeTitle === t.cleanName);
+      return `• ${t.name}${isCur ? ' (장착중)' : ''}`;
+    }).join('\n');
+  } else {
+    listLines = '• 아직 해금된 칭호가 없습니다.';
+  }
+
+  const popupText = `🎖️ [내 칭호 정보]\n` +
+    `👤 ${w.name} 님\n` +
+    `현재 장착: ${activeStr}\n` +
+    `해금 완료: ${unlockedIds.size} / ${TITLE_DEFINITIONS.length}개\n\n` +
+    `[해금된 칭호 목록]\n` +
+    `${listLines}\n\n` +
+    `💡 칭호 변경/장착은 채팅창에 /칭호 를 입력하세요!`;
+
+  return ctx.answerCbQuery(popupText, { show_alert: true });
 });
 
 bot.action(/^set_title_(.+)$/, async (ctx) => {
