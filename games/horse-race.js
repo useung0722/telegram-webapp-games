@@ -185,9 +185,16 @@ const RACER_POOL = [
 
 const VERTICAL_TRACK_HEIGHT = 15; // 0 ~ 14 레인, 15번째가 결승선 통과!
 const FINISH_LINE = VERTICAL_TRACK_HEIGHT;
+const BETTING_DURATION_SEC = 300; // 5분 기본 대기시간 (300초)
 
 const races = {};
 let raceCounter = 1;
+
+function formatRemainingTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}분 ${s < 10 ? '0' : ''}${s}초`;
+}
 
 function getRaceBettingText(race) {
   const horseList = race.horses.map((h, i) => {
@@ -207,11 +214,16 @@ function getRaceBettingText(race) {
       .join('\n');
   }
 
+  const remainSec = race.remainingSeconds != null ? race.remainingSeconds : BETTING_DURATION_SEC;
+  const timeText = formatRemainingTime(remainSec);
+
   return `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기 대회] 배팅 오픈!**\n\n` +
+    `⏳ **남은 배팅 시간**: ⏱️ **${timeText}**\n` +
+    `⚡ *(한 명이 배팅할 때마다 타이머 -1분 차감! / 최소 10초 보장)*\n\n` +
     `🏁 **출전 선수 명단**:\n${horseList}\n\n` +
     `📊 **배팅 내역**:\n${betList}\n\n` +
     `💡 *느린 동물일수록 배당이 어마어마하지만 역전의 한 방이 있습니다!*\n` +
-    `👇 아래 버튼으로 배팅 후 [🏁 경기 시작] 을 누르세요!\n` +
+    `👇 아래 버튼으로 원하는 동물에 배팅하세요! 시간이 끝나면 자동 출발합니다!\n` +
     `⚠️ **주의**: 경주가 시작되면 달리는 화면이 가려지지 않도록 채팅이 자동 삭제됩니다.`;
 }
 
@@ -223,7 +235,6 @@ function getRaceBettingKeyboard(race) {
       Markup.button.callback(`${h.emoji} ${i + 1}번 (올인)`, `bet_${i + 1}_all`)
     ];
   });
-  horseButtons.push([Markup.button.callback('🏁 경기 시작 (출발!)', 'start_race_now')]);
   return Markup.inlineKeyboard(horseButtons);
 }
 
@@ -290,6 +301,8 @@ function initHorseRace(bot, helpers) {
       raceNo: raceCounter++,
       threadId,
       state: 'betting',
+      remainingSeconds: BETTING_DURATION_SEC,
+      timerInterval: null,
       horses: selectedRacers.map((r, idx) => ({
         id: idx + 1,
         name: r.name,
@@ -311,11 +324,50 @@ function initHorseRace(bot, helpers) {
     });
 
     races[chatId].messageId = sent.message_id;
+
+    // ⏱️ 5분(300초) 카운트다운 타이머 시작 (1초마다 차감, 10초 주기 또는 막판에 메시지 갱신)
+    races[chatId].timerInterval = setInterval(async () => {
+      const currentRace = races[chatId];
+      if (!currentRace || currentRace.state !== 'betting') {
+        clearInterval(races[chatId]?.timerInterval);
+        return;
+      }
+
+      currentRace.remainingSeconds--;
+
+      // 시간 종료 시 자동 출발!
+      if (currentRace.remainingSeconds <= 0) {
+        clearInterval(currentRace.timerInterval);
+        currentRace.timerInterval = null;
+        return runVerticalRaceAnimation(chatId, ctx);
+      }
+
+      // 10초마다, 또는 남은 시간이 10초 이하일 때는 매초 UI 시간 갱신
+      if (currentRace.remainingSeconds % 10 === 0 || currentRace.remainingSeconds <= 10) {
+        try {
+          await bot.telegram.editMessageText(
+            chatId,
+            currentRace.messageId,
+            null,
+            getRaceBettingText(currentRace),
+            {
+              parse_mode: 'Markdown',
+              ...getRaceBettingKeyboard(currentRace)
+            }
+          );
+        } catch (e) {}
+      }
+    }, 1000);
   }
 
   async function runVerticalRaceAnimation(chatId, ctx) {
     const race = races[chatId];
     if (!race || race.state !== 'betting') return;
+
+    if (race.timerInterval) {
+      clearInterval(race.timerInterval);
+      race.timerInterval = null;
+    }
 
     race.state = 'racing';
 
@@ -524,7 +576,12 @@ function initHorseRace(bot, helpers) {
     }
     saveWallets();
 
-    await ctx.answerCbQuery(`${racerDisplayName}에 ${amount.toLocaleString()} P 배팅 완료!`);
+    // ⏱️ 한 사람이 배팅하면 남은 시간 중 1분(60초) 차감. 0초 이하가 된다면 최소 10초 보장!
+    if (race.remainingSeconds > 10) {
+      race.remainingSeconds = Math.max(10, race.remainingSeconds - 60);
+    }
+
+    await ctx.answerCbQuery(`${racerDisplayName}에 ${amount.toLocaleString()} P 배팅 완료! (⏱️ -1분 단축)`);
 
     try {
       await ctx.editMessageText(getRaceBettingText(race), {
@@ -532,12 +589,6 @@ function initHorseRace(bot, helpers) {
         ...getRaceBettingKeyboard(race)
       });
     } catch (e) {}
-  });
-
-  // 🔘 경기 시작 액션
-  bot.action('start_race_now', async (ctx) => {
-    await ctx.answerCbQuery('경기를 시작합니다!');
-    return runVerticalRaceAnimation(ctx.chat.id, ctx);
   });
 
   return {
