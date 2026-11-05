@@ -1,0 +1,91 @@
+{
+  "1204945384": {
+    "name": "우성 이",
+    "points": 714000,
+    "lastBeg": 1793854205075,
+    "raceCount": 7,
+    "wins": 3,
+    "maxOdds": 7,
+    "maxProfit": 612000,
+    "begCount": 0,
+    "bankruptHit": false,
+    "allInWon": true,
+    "unlockedTitles": [
+      "t_dirt",
+      "t_mid",
+      "t_rich",
+      "t_first_win",
+      "t_underdog",
+      "t_miracle",
+      "t_jackpot",
+      "t_dia",
+      "t_bigwin",
+      "t_allin"
+    ],
+    "activeTitle": "흙수저 탈출"
+  },
+  "1295849165": {
+    "name": "동현 서",
+    "points": 10000,
+    "lastBeg": 1793856064049
+  },
+  "7674751132": {
+    "name": "김지현",
+    "points": 2000,
+    "lastBeg": 1793861864917,
+    "raceCount": 5,
+    "wins": 1,
+    "maxOdds": 6.5,
+    "maxProfit": 66000,
+    "begCount": 6,
+    "bankruptHit": true,
+    "allInWon": false,
+    "unlockedTitles": [
+      "t_dirt",
+      "t_mid",
+      "t_rich",
+      "t_first_win",
+      "t_underdog",
+      "t_miracle",
+      "t_jackpot",
+      "t_bankrupt",
+      "t_cleaner"
+    ],
+    "activeTitle": "기적의 눈썰미"
+  },
+  "6652563145": {
+    "name": "준성 이",
+    "points": 6000,
+    "lastBeg": 1793861822432,
+    "raceCount": 0,
+    "wins": 0,
+    "maxOdds": 0,
+    "maxProfit": 0,
+    "begCount": 3,
+    "bankruptHit": false,
+    "allInWon": false,
+    "unlockedTitles": []
+  },
+  "7489163059": {
+    "name": "상두 김",
+    "points": 183940,
+    "lastBeg": 1793846838991,
+    "raceCount": 2,
+    "wins": 1,
+    "maxOdds": 6.5,
+    "maxProfit": 82500,
+    "begCount": 0,
+    "bankruptHit": false,
+    "allInWon": false,
+    "unlockedTitles": [
+      "t_dirt",
+      "t_mid",
+      "t_rich",
+      "t_first_win",
+      "t_underdog",
+      "t_miracle",
+      "t_jackpot"
+    ],
+    "activeTitle": "백만장자"
+  }
+}
