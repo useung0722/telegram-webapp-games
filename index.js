@@ -687,25 +687,29 @@ bot.action('cmd_title', async (ctx) => {
   const unlockedIds = new Set(w.unlockedTitles || []);
   const unlockedTitles = TITLE_DEFINITIONS.filter(t => unlockedIds.has(t.id));
 
-  let listLines = '';
+  // 텔레그램 콜백 팝업(Alert) 200자 제한 맞춤 요약
+  let namesSummary = '';
   if (unlockedTitles.length > 0) {
-    listLines = unlockedTitles.map(t => {
-      const isCur = (w.activeTitle === t.cleanName);
-      return `• ${t.name}${isCur ? ' (장착중)' : ''}`;
-    }).join('\n');
+    namesSummary = unlockedTitles.map(t => t.cleanName).join(', ');
+    if (namesSummary.length > 90) {
+      namesSummary = namesSummary.slice(0, 87) + '...';
+    }
   } else {
-    listLines = '• 아직 해금된 칭호가 없습니다.';
+    namesSummary = '없음';
   }
 
   const popupText = `🎖️ [내 칭호 정보]\n` +
     `👤 ${w.name} 님\n` +
-    `현재 장착: ${activeStr}\n` +
-    `해금 완료: ${unlockedIds.size} / ${TITLE_DEFINITIONS.length}개\n\n` +
-    `[해금된 칭호 목록]\n` +
-    `${listLines}\n\n` +
-    `💡 칭호 변경/장착은 채팅창에 /칭호 를 입력하세요!`;
+    `장착중: ${activeStr}\n` +
+    `달성: ${unlockedIds.size} / ${TITLE_DEFINITIONS.length}개\n\n` +
+    `보유: ${namesSummary}\n\n` +
+    `👉 장착/해제는 채팅창에 /칭호 입력!`;
 
-  return ctx.answerCbQuery(popupText, { show_alert: true });
+  try {
+    return await ctx.answerCbQuery(popupText, { show_alert: true });
+  } catch (e) {
+    return ctx.answerCbQuery(`🎖️ 장착중: ${activeStr} (달성 ${unlockedIds.size}개)\n변경은 /칭호 입력!`, { show_alert: true });
+  }
 });
 
 bot.action(/^set_title_(.+)$/, async (ctx) => {
