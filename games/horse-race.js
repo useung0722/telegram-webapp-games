@@ -31,7 +31,8 @@ function getHorseLosses(name) {
 
 function getHorseCurrentOdds(racer) {
   const losses = getHorseLosses(racer.name);
-  const calculated = racer.odds + (losses * 0.5);
+  if (losses === 0) return racer.odds;
+  const calculated = racer.odds * Math.pow(2, losses);
   return Math.round(calculated * 10) / 10;
 }
 
@@ -44,7 +45,7 @@ function recordRaceResult(winnerName, participantNames) {
       horseStats[name].wins = (horseStats[name].wins || 0) + 1;
       horseStats[name].consecutiveLosses = 0; // 우승 시 연패 초기화 (원점 복귀)
     } else {
-      horseStats[name].consecutiveLosses = (horseStats[name].consecutiveLosses || 0) + 1; // 패배 시 연패 누적 (+0.5배율)
+      horseStats[name].consecutiveLosses = (horseStats[name].consecutiveLosses || 0) + 1; // 패배 시 연패 누적 (*2배)
     }
   }
   saveHorseStats();
@@ -194,7 +195,7 @@ function getRaceBettingText(race) {
     const wins = getHorseWins(h.name);
     const losses = getHorseLosses(h.name);
     const winBadge = wins > 0 ? ` | 🏆 ${wins}승` : ' | 🏆 0승';
-    const streakBadge = losses > 0 ? ` 🔥 ${losses}연패 보너스(+${(losses * 0.5).toFixed(1)}x)` : '';
+    const streakBadge = losses > 0 ? ` 🔥 ${losses}연패 보너스(×${Math.pow(2, losses)}배)` : '';
     return `${i + 1}번 ${h.emoji} **${h.title}** (${h.name})\n` +
            `   • 배당: **${h.odds}x**${streakBadge} | 특성: **[${h.trait}]**${winBadge}\n` +
            `   • _${h.desc}_`;

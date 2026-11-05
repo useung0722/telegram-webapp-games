@@ -24,31 +24,35 @@
     "wins": 3
   },
   "호랑이": {
-    "wins": 5
+    "wins": 5,
+    "consecutiveLosses": 3
   },
   "거북이": {
-    "wins": 8,
+    "wins": 12,
     "consecutiveLosses": 0
   },
   "늑대": {
-    "wins": 8,
+    "wins": 12,
     "consecutiveLosses": 0
   },
   "돼지": {
-    "wins": 2
+    "wins": 2,
+    "consecutiveLosses": 6
   },
   "토끼": {
-    "wins": 4
+    "wins": 5,
+    "consecutiveLosses": 2
   },
   "달팽이": {
-    "wins": 1
+    "wins": 1,
+    "consecutiveLosses": 3
   },
   "경주마": {
-    "wins": 0,
+    "wins": 1,
     "consecutiveLosses": 2
   },
   "치타": {
     "wins": 0,
-    "consecutiveLosses": 1
+    "consecutiveLosses": 4
   }
 }

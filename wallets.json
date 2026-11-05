@@ -1,10 +1,10 @@
 {
   "1204945384": {
     "name": "우성 이",
-    "points": 714000,
+    "points": 1493999,
     "lastBeg": 1793854205075,
-    "raceCount": 7,
-    "wins": 3,
+    "raceCount": 14,
+    "wins": 10,
     "maxOdds": 7,
     "maxProfit": 612000,
     "begCount": 0,
@@ -20,26 +20,39 @@
       "t_jackpot",
       "t_dia",
       "t_bigwin",
-      "t_allin"
+      "t_allin",
+      "t_god",
+      "t_mansour",
+      "t_gambler"
     ],
     "activeTitle": "흙수저 탈출"
   },
   "1295849165": {
     "name": "동현 서",
-    "points": 10000,
-    "lastBeg": 1793856064049
+    "points": 2000,
+    "lastBeg": 1793865897808,
+    "raceCount": 1,
+    "wins": 0,
+    "maxOdds": 0,
+    "maxProfit": 0,
+    "begCount": 1,
+    "bankruptHit": true,
+    "allInWon": false,
+    "unlockedTitles": [
+      "t_bankrupt"
+    ]
   },
   "7674751132": {
     "name": "김지현",
-    "points": 2000,
-    "lastBeg": 1793861864917,
-    "raceCount": 5,
-    "wins": 1,
+    "points": 25600,
+    "lastBeg": 1793864261547,
+    "raceCount": 10,
+    "wins": 3,
     "maxOdds": 6.5,
     "maxProfit": 66000,
-    "begCount": 6,
+    "begCount": 13,
     "bankruptHit": true,
-    "allInWon": false,
+    "allInWon": true,
     "unlockedTitles": [
       "t_dirt",
       "t_mid",
@@ -49,29 +62,38 @@
       "t_miracle",
       "t_jackpot",
       "t_bankrupt",
-      "t_cleaner"
+      "t_cleaner",
+      "t_allin",
+      "t_gambler"
     ],
-    "activeTitle": "기적의 눈썰미"
+    "activeTitle": "깡통 계좌"
   },
   "6652563145": {
     "name": "준성 이",
-    "points": 6000,
+    "points": 0,
     "lastBeg": 1793861822432,
-    "raceCount": 0,
-    "wins": 0,
-    "maxOdds": 0,
-    "maxProfit": 0,
+    "raceCount": 2,
+    "wins": 1,
+    "maxOdds": 3.2,
+    "maxProfit": 13200,
     "begCount": 3,
-    "bankruptHit": false,
-    "allInWon": false,
-    "unlockedTitles": []
+    "bankruptHit": true,
+    "allInWon": true,
+    "unlockedTitles": [
+      "t_dirt",
+      "t_first_win",
+      "t_underdog",
+      "t_allin",
+      "t_bankrupt"
+    ],
+    "activeTitle": "인생 한방러"
   },
   "7489163059": {
     "name": "상두 김",
-    "points": 183940,
+    "points": 196940,
     "lastBeg": 1793846838991,
-    "raceCount": 2,
-    "wins": 1,
+    "raceCount": 3,
+    "wins": 2,
     "maxOdds": 6.5,
     "maxProfit": 82500,
     "begCount": 0,
