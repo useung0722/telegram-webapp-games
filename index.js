@@ -359,7 +359,7 @@ function getGameActionButtons() {
 // 🏇 대환장 동물 달리기 대회 (경마/배팅 모듈 로드)
 // ==========================================
 const { initHorseRace } = require('./games/horse-race');
-const { handleRace, races } = initHorseRace(bot, {
+const { handleRace, handleTextBet, races } = initHorseRace(bot, {
   getThreadId,
   GAME_THREAD_ID,
   getWallet,
@@ -1162,7 +1162,15 @@ function lookupAlias(raw) {
 
 bot.on('text', async (ctx, next) => {
   const raw = ctx.message && ctx.message.text;
-  if (!raw || !raw.trim().startsWith('/')) return next();
+  if (!raw) return next();
+
+  // 🏇 경마 대기실 텍스트 배팅 감지 (예: "1번 3000", "2번 올인", "3번 5천" 등)
+  if (handleTextBet) {
+    const handled = await handleTextBet(ctx, raw);
+    if (handled) return; // 배팅 처리 완료 시 다음 미들웨어 건너뜀
+  }
+
+  if (!raw.trim().startsWith('/')) return next();
 
   const hit = lookupAlias(raw);
   if (!hit) return next();

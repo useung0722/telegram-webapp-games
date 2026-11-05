@@ -210,8 +210,8 @@ function getRaceBettingText(race) {
   return `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기 대회] 배팅 오픈!**\n\n` +
     `🏁 **출전 선수 명단**:\n${horseList}\n\n` +
     `📊 **배팅 내역**:\n${betList}\n\n` +
-    `💡 *느린 동물일수록 배당이 어마어마하지만 역전의 한 방이 있습니다!*\n` +
-    `👇 아래 버튼으로 배팅 후 [🏁 경기 시작] 을 누르세요!\n` +
+    `💬 **배팅 방법**: 버튼 클릭 또는 채팅창에 **\`1번 3000\`**, **\`2번 5천\`**, **\`3번 올인\`** 타이핑!\n` +
+    `👇 배팅 후 [🏁 경기 시작] 을 누르세요!\n` +
     `⚠️ **주의**: 경주가 시작되면 달리는 화면이 가려지지 않도록 채팅이 자동 삭제됩니다.`;
 }
 
@@ -487,52 +487,148 @@ function initHorseRace(bot, helpers) {
     }, 2200);
   }
 
-  // 🔘 배팅 액션 리스너
-  bot.action(/^bet_(\d+)_(1000|5000|all)$/, async (ctx) => {
-    const horseId = parseInt(ctx.match[1], 10);
-    const mode = ctx.match[2];
-    const user = ctx.from;
-    const name = user.first_name + (user.last_name ? ' ' + user.last_name : '');
-    const chatId = ctx.chat.id;
+  function processBet(chatId, user, horseId, amount, isAllIn) {
     const race = races[chatId];
-
     if (!race || race.state !== 'betting') {
-      return ctx.answerCbQuery('현재 배팅 시간이 아닙니다.');
+      return { success: false, reason: '현재 배팅 시간이 아닙니다.' };
     }
 
     const racer = race.horses.find(h => h.id === horseId);
-    const racerDisplayName = racer ? `${racer.emoji} ${racer.title}` : `${horseId}번`;
+    if (!racer) {
+      return { success: false, reason: '존재하지 않는 출전 번호입니다 (1~3번).' };
+    }
+    const racerDisplayName = `${racer.emoji} ${racer.title}`;
 
+    const name = user.first_name + (user.last_name ? ' ' + user.last_name : '');
     const w = getWallet(user.id, name);
-    let amount = (mode === 'all') ? w.points : parseInt(mode, 10);
 
-    if (amount <= 0) return ctx.answerCbQuery('배팅할 포인트가 없습니다! (/구걸)', { show_alert: true });
-    if (w.points < amount) return ctx.answerCbQuery(`잔액 부족! (현재 ${w.points.toLocaleString()} P)`, { show_alert: true });
+    if (isAllIn) {
+      amount = w.points;
+    }
 
-    const isAllIn = (mode === 'all') || (w.points === amount);
+    if (amount <= 0) {
+      return { success: false, reason: '배팅할 포인트가 없습니다! (/구걸)' };
+    }
+    if (w.points < amount) {
+      return { success: false, reason: `잔액이 부족합니다! (현재: ${w.points.toLocaleString()} P)` };
+    }
+
     const currentBet = race.bets.get(user.id);
     if (currentBet) {
       if (currentBet.horseId !== horseId) {
-        return ctx.answerCbQuery(`이미 ${currentBet.horseId}번(${currentBet.racerName})에 배팅하셨습니다!`, { show_alert: true });
+        return { success: false, reason: `이미 ${currentBet.horseId}번(${currentBet.racerName})에 배팅하셨습니다!` };
       }
       w.points -= amount;
       currentBet.amount += amount;
-      if (isAllIn) currentBet.isAllIn = true;
+      if (isAllIn || w.points === 0) currentBet.isAllIn = true;
     } else {
       w.points -= amount;
-      race.bets.set(user.id, { horseId, amount, name, racerName: racerDisplayName, isAllIn });
+      race.bets.set(user.id, {
+        horseId,
+        amount,
+        name,
+        racerName: racerDisplayName,
+        isAllIn: isAllIn || (w.points === 0)
+      });
     }
     saveWallets();
 
-    await ctx.answerCbQuery(`${racerDisplayName}에 ${amount.toLocaleString()} P 배팅 완료!`);
+    return {
+      success: true,
+      racerDisplayName,
+      amount,
+      race
+    };
+  }
+
+  // 🔘 인라인 버튼 배팅 액션 리스너
+  bot.action(/^bet_(\d+)_(1000|5000|all)$/, async (ctx) => {
+    const horseId = parseInt(ctx.match[1], 10);
+    const mode = ctx.match[2];
+    const isAllIn = (mode === 'all');
+    const amount = isAllIn ? 0 : parseInt(mode, 10);
+
+    const res = processBet(ctx.chat.id, ctx.from, horseId, amount, isAllIn);
+    if (!res.success) {
+      return ctx.answerCbQuery(res.reason, { show_alert: true });
+    }
+
+    await ctx.answerCbQuery(`${res.racerDisplayName}에 ${res.amount.toLocaleString()} P 배팅 완료!`);
 
     try {
-      await ctx.editMessageText(getRaceBettingText(race), {
+      await ctx.editMessageText(getRaceBettingText(res.race), {
         parse_mode: 'Markdown',
-        ...getRaceBettingKeyboard(race)
+        ...getRaceBettingKeyboard(res.race)
       });
     } catch (e) {}
   });
+
+  // 💬 채팅 텍스트 배팅 파서 (예: "1번 3000", "2번 5천", "3 1만", "1번 올인")
+  async function handleTextBet(ctx, text) {
+    const chatId = ctx.chat.id;
+    const race = races[chatId];
+    if (!race || race.state !== 'betting') return false;
+
+    const trimmed = text.trim();
+    // 패턴 매칭: "1번 3000", "1 5000", "2번 올인", "3번 1만", "1번 5천", "/배팅 1 3000" 등
+    const match = trimmed.match(/^(?:\/배팅\s+|\/bet\s+)?([1-3])(?:번)?\s+([0-9만천kK,]+|올인|all)$/i);
+    if (!match) return false;
+
+    const horseId = parseInt(match[1], 10);
+    const rawAmount = match[2].toLowerCase();
+
+    let amount = 0;
+    let isAllIn = false;
+
+    if (rawAmount === '올인' || rawAmount === 'all') {
+      isAllIn = true;
+    } else {
+      // 단위 변환: 만, 천, k 처리
+      let numStr = rawAmount.replace(/,/g, '');
+      if (numStr.endsWith('만')) {
+        amount = Math.floor(parseFloat(numStr.replace('만', '')) * 10000);
+      } else if (numStr.endsWith('천') || numStr.endsWith('k')) {
+        amount = Math.floor(parseFloat(numStr.replace(/[천k]/g, '')) * 1000);
+      } else {
+        amount = parseInt(numStr, 10);
+      }
+    }
+
+    if (!isAllIn && (!amount || isNaN(amount) || amount <= 0)) return false;
+
+    const res = processBet(chatId, ctx.from, horseId, amount, isAllIn);
+
+    // 유저의 배팅 입력 메시지 삭제 (채팅창 깔끔 유지)
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {}
+
+    if (!res.success) {
+      const alertMsg = await ctx.reply(`⚠️ ${res.reason}`);
+      setTimeout(async () => {
+        try { await ctx.deleteMessage(alertMsg.message_id); } catch (e) {}
+      }, 3000);
+      return true;
+    }
+
+    // 대기실 메시지 실시간 갱신
+    if (race.messageId) {
+      try {
+        await bot.telegram.editMessageText(
+          chatId,
+          race.messageId,
+          null,
+          getRaceBettingText(race),
+          {
+            parse_mode: 'Markdown',
+            ...getRaceBettingKeyboard(race)
+          }
+        );
+      } catch (e) {}
+    }
+
+    return true;
+  }
 
   // 🔘 경기 시작 액션
   bot.action('start_race_now', async (ctx) => {
@@ -542,6 +638,7 @@ function initHorseRace(bot, helpers) {
 
   return {
     handleRace,
+    handleTextBet,
     races
   };
 }
