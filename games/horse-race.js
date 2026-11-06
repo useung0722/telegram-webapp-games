@@ -480,51 +480,37 @@ function initHorseRace(bot, helpers) {
     race.state = 'racing';
     saveActiveRaces();
 
-    if (race.messageId) {
-      try {
-        await ctx.deleteMessage(race.messageId);
-      } catch (e) {}
-    }
-
-    const horseInfoLine = race.horses.map((h, i) => `${i + 1}번 ${h.emoji} ${h.title}`).join(' | ');
-    const initText = `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기] LIVE**\n` +
-      `📢 ${horseInfoLine}\n\n` +
-      `${renderVerticalTrack(race)}\n\n` +
-      `⚡ **실시간 전황**: 출발선에서 긴장감이 감돕니다...\n` +
-      `💬 **중계석**: 준비하시고... 땅! 💥\n` +
-      `🤫 *(경주 중 대화 임시 제한)*`;
-
     const threadId = race.threadId || getThreadId(ctx) || GAME_THREAD_ID;
     const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
     const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
     const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
 
+    // 텔레그램 채팅창에 지저분한 아스키 트랙 도배 중계 대신, 깔끔한 미니앱 관전 안내 1줄만 전송
+    const runningNotice = `🐎 **[제 ${race.raceNo}회 대환장 동물 달리기] 출발!!**\n\n` +
+      `엑셀 시트에서 실시간 60FPS 레이스가 진행 중입니다!\n` +
+      `아래 버튼을 눌러 시트에서 관전하세요! 👇`;
+
     const liveExtra = {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', miniAppUrl)]
+        [Markup.button.url('📊 엑셀 시트 실시간 관전하기', miniAppUrl)]
       ])
     };
     if (threadId) liveExtra.message_thread_id = threadId;
 
-    const liveMsg = await bot.telegram.sendMessage(chatId, initText, liveExtra);
-    race.messageId = liveMsg.message_id;
+    try {
+      if (race.messageId) {
+        await bot.telegram.editMessageText(chatId, race.messageId, null, runningNotice, liveExtra);
+      } else {
+        const sent = await bot.telegram.sendMessage(chatId, runningNotice, liveExtra);
+        race.messageId = sent.message_id;
+      }
+    } catch (e) {}
 
+    // 물리 엔진과 동일한 시드 기반으로 15초(레이스 시간) 동안 대기 후 최종 결과 정산
     let turn = 0;
-    const commentary = [
-      '탕! 게이트 오픈! 각양각색 동물들이 출발합니다! 💥',
-      '초반 질주! 치타와 경주마가 선두를 다툽니다! 🔥',
-      '중반 구간 진입! 늑대와 맹호의 발걸음이 빨라집니다! 💨',
-      '어어?! 뒤처지던 거북이와 달팽이의 눈빛이 변합니다?! ⚡️',
-      '후반 대격돌! 엄청난 스피드로 선두가 뒤바뀝니다! 🌪️',
-      '기적의 막판 대역전 스퍼트!! 결승선이 코앞입니다!! 🚨',
-      '골인 직전!! 모든 동물들이 결승선을 향해 다이빙!! 🏁',
-      '골인!! 결승선 통과!! 🏆'
-    ];
-
     const interval = setInterval(async () => {
       turn++;
-      const turnEvents = [];
 
       for (const h of race.horses) {
         if (h.progress < FINISH_LINE) {
@@ -536,19 +522,10 @@ function initHorseRace(bot, helpers) {
             const s = Math.floor(Math.random() * 2) + 1;
             outcome = { step: s, effect: (s > 1 ? '💨' : '━'), msg: '' };
           }
-
           h.progress = Math.max(0, Math.min(FINISH_LINE, h.progress + outcome.step));
-          h.lastEffect = outcome.effect || '';
-
-          if (outcome.msg && (outcome.step >= 3 || outcome.step <= 0 || outcome.effect === '💦' || outcome.effect === '⚡️' || outcome.effect === '🚀' || outcome.effect === '🍌' || outcome.effect === '↩️' || outcome.effect === '🚨' || outcome.effect === '💢')) {
-            turnEvents.push(`${h.emoji} **[${h.title}]** ${outcome.msg}`);
-          }
-
           if (h.progress >= FINISH_LINE && !h.finishScore) {
             h.finishScore = (FINISH_LINE + outcome.step * 0.1) + Math.random() * 0.09;
           }
-        } else {
-          h.lastEffect = '';
         }
       }
 
@@ -556,34 +533,7 @@ function initHorseRace(bot, helpers) {
       const anyFinished = finishedHorses.length > 0;
       const isPhotoFinish = finishedHorses.length > 1;
 
-      const comment = anyFinished
-        ? (isPhotoFinish ? '🚨 동시 골인!! 심판진 정밀 사진 판독에 들어갑니다!! 📷🏁' : '와아아!! 대망의 1등이 결승선을 완전히 통과했습니다!! 🏁🥇')
-        : commentary[Math.min(turn - 1, commentary.length - 2)];
-
-      let eventLog = turnEvents.length > 0 ? turnEvents.join('\n') : '치열한 눈치 싸움과 팽팽한 레이스가 이어집니다!';
-      if (anyFinished) {
-        eventLog = '🏁 **선두 동물이 결승선을 돌파했습니다!!**';
-      }
-
-      const text = `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기] LIVE**\n` +
-        `📢 ${horseInfoLine}\n\n` +
-        `${renderVerticalTrack(race)}\n\n` +
-        `⚡ **실시간 전황**:\n${eventLog}\n\n` +
-        `💬 **중계석**: ${comment}\n` +
-        `🤫 *(경주 중 대화 임시 제한)*`;
-
-      const liveMarkup = Markup.inlineKeyboard([
-        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', miniAppUrl)]
-      ]);
-
-      try {
-        await bot.telegram.editMessageText(chatId, race.messageId, null, text, {
-          parse_mode: 'Markdown',
-          ...liveMarkup
-        });
-      } catch (e) {}
-
-      if (anyFinished || turn >= 15) {
+      if (anyFinished || turn >= 10) {
         clearInterval(interval);
 
         race.horses.sort((a, b) => {
@@ -651,7 +601,7 @@ function initHorseRace(bot, helpers) {
           resultText += `\n━━━━━━━━━━━━━━━\n` + newlyUnlockedMsgs.join('\n') + `\n`;
         }
 
-        resultText += `━━━━━━━━━━━━━━━\n🗣️ **대화 제한이 해제되었습니다!**\n아래 버튼을 눌러 바로 다음 경기를 열거나 지갑/랭킹을 확인하세요!`;
+        resultText += `━━━━━━━━━━━━━━━\n아래 버튼을 눌러 바로 다음 경기를 열거나 지갑/랭킹을 확인하세요!`;
 
         setTimeout(async () => {
           try {
@@ -661,9 +611,9 @@ function initHorseRace(bot, helpers) {
           } catch (e) {}
           delete races[chatId];
           saveActiveRaces();
-        }, 1500);
+        }, 1200);
       }
-    }, 2200);
+    }, 1500);
   }
 
   function processBet(chatId, user, horseId, amount, isAllIn) {
