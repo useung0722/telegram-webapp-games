@@ -306,6 +306,17 @@ function saveActiveRaces() {
   } catch (e) {}
 }
 
+function formatKstTime(timestamp) {
+  const date = new Date(timestamp);
+  // 한국 시간(KST, UTC+9) 계산
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const kst = new Date(utc + (9 * 3600000));
+  const hours = String(kst.getHours()).padStart(2, '0');
+  const minutes = String(kst.getMinutes()).padStart(2, '0');
+  const seconds = String(kst.getSeconds()).padStart(2, '0');
+  return `${hours}시 ${minutes}분 ${seconds}초`;
+}
+
 function getRaceBettingText(race) {
   const horseList = race.horses.map((h, i) => {
     const losses = getHorseLosses(h.name);
@@ -313,17 +324,13 @@ function getRaceBettingText(race) {
     return `${i + 1}번 ${h.emoji} **${h.title}** (${h.odds}x${streakBadge}) - _${h.desc}_`;
   }).join('\n');
 
-  let betSummary = '없음';
-  if (race.bets.size > 0) {
-    betSummary = Array.from(race.bets.values())
-      .map(b => `${b.name}(${b.horseId}번 ${b.amount.toLocaleString()}P)`)
-      .join(', ');
-  }
+  const startTimeStr = formatKstTime(race.canStartAt);
 
-  return `🏇 **[제 ${race.raceNo}회 동물 달리기] 대기실 오픈**\n\n` +
+  return `🏇 **[제 ${race.raceNo}회 대환장 동물 달리기] 대기실 오픈**\n\n` +
+    `⏰ **경기 출발 예정 시각: ${startTimeStr}** (1분 후 자동 출발)\n\n` +
+    `📋 **[출전 동물 명단]**\n` +
     `${horseList}\n\n` +
-    `⏳ **60초 후 레이스가 자동 출발합니다!**\n` +
-    `👉 아래 [엑셀 시트 입장] 버튼을 눌러 시트 안에서 배팅하고 응원해 주세요!`;
+    `👉 아래 **[📊 엑셀 시트 입장]** 버튼을 눌러 시트 안에서 원하는 동물에 배팅하고 실시간 응원해 주세요!`;
 }
 
 function getRaceBettingKeyboard(race) {
@@ -333,7 +340,7 @@ function getRaceBettingKeyboard(race) {
   const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
 
   return Markup.inlineKeyboard([
-    [Markup.button.url('📊 엑셀 시트 입장 (배팅 & 60초 후 자동 출발)', miniAppUrl)]
+    [Markup.button.url('📊 엑셀 시트 입장 (배팅 & 관전)', miniAppUrl)]
   ]);
 }
 

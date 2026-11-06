@@ -359,7 +359,7 @@ function getGameActionButtons() {
 // 🏇 대환장 동물 달리기 대회 (경마/배팅 모듈 로드)
 // ==========================================
 const { initHorseRace } = require('./games/horse-race');
-const { handleRace, handleTextBet, races } = initHorseRace(bot, {
+const { handleRace, handleTextBet, refundAndCleanupActiveRaces, races } = initHorseRace(bot, {
   getThreadId,
   GAME_THREAD_ID,
   getWallet,
@@ -426,7 +426,9 @@ bot.use(async (ctx, next) => {
   const race = races[chatId];
 
   if (race && race.state === 'racing') {
-    if (ctx.message.message_id !== race.messageId) {
+    const threadId = getThreadId(ctx);
+    // 경주가 진행 중인 토픽(주제방)의 일반 대화만 제한하고, 다른 토픽(일반/점심 등)은 제한하지 않음
+    if (threadId === race.threadId && ctx.message.message_id !== race.messageId) {
       try {
         await ctx.deleteMessage(ctx.message.message_id);
       } catch (e) {}
@@ -1269,5 +1271,14 @@ bot.launch().then(() => {
   registerCommands();
 });
 
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+function handleShutdown(signal) {
+  try {
+    if (typeof refundAndCleanupActiveRaces === 'function') {
+      refundAndCleanupActiveRaces();
+    }
+  } catch (e) {}
+  bot.stop(signal);
+}
+
+process.once('SIGINT', () => handleShutdown('SIGINT'));
+process.once('SIGTERM', () => handleShutdown('SIGTERM'));
