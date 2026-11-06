@@ -319,45 +319,21 @@ function getRaceBettingText(race) {
       .join(', ');
   }
 
-  return `🏇 **[제 ${race.raceNo}회 동물 달리기] 배팅 오픈**\n\n` +
+  return `🏇 **[제 ${race.raceNo}회 동물 달리기] 대기실 오픈**\n\n` +
     `${horseList}\n\n` +
-    `📊 **배팅**: ${betSummary}\n` +
-    `💡 버튼 클릭 또는 채팅창에 **\`1번 3000\`**, **\`올인\`** 입력!`;
+    `⏳ **60초 후 레이스가 자동 출발합니다!**\n` +
+    `👉 아래 [엑셀 시트 입장] 버튼을 눌러 시트 안에서 배팅하고 응원해 주세요!`;
 }
 
 function getRaceBettingKeyboard(race) {
-  const horseButtons = race.horses.map((h, i) => {
-    return [
-      Markup.button.callback(`${h.emoji} ${i + 1}번 (+1천)`, `bet_${i + 1}_1000`),
-      Markup.button.callback(`${h.emoji} ${i + 1}번 (+5천)`, `bet_${i + 1}_5000`),
-      Markup.button.callback(`${h.emoji} ${i + 1}번 (올인)`, `bet_${i + 1}_all`)
-    ];
-  });
-
-  const now = Date.now();
-  const remainingSec = Math.ceil(((race.canStartAt || 0) - now) / 1000);
-
   // 📊 사내 위장 엑셀 텔레그램 Mini App Direct Link 생성
   const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
   const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
   const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
 
-  if (remainingSec > 0) {
-    horseButtons.push([
-      Markup.button.callback(`⏳ 배팅 준비 중 (${remainingSec}초 남음)`, 'start_race_now')
-    ]);
-  } else {
-    horseButtons.push([
-      Markup.button.callback('🏁 경기 시작 (출발!)', 'start_race_now')
-    ]);
-  }
-
-  // 엑셀 웹앱 관전 버튼 상시 노출 (텔레그램 인앱 미니앱 직행 링크)
-  horseButtons.push([
-    Markup.button.url('📊 [사내위장] 엑셀 스프레드시트 관전', miniAppUrl)
+  return Markup.inlineKeyboard([
+    [Markup.button.url('📊 엑셀 시트 입장 (배팅 & 60초 후 자동 출발)', miniAppUrl)]
   ]);
-
-  return Markup.inlineKeyboard(horseButtons);
 }
 
 // 🏁 세로형 트랙 렌더러
@@ -481,20 +457,15 @@ function initHorseRace(bot, helpers) {
     races[chatId].messageId = sent.message_id;
     saveActiveRaces();
 
-    // 10초 후 "🏁 경기 시작" 버튼 활성화 상태로 자동 갱신
+    // 60초 후 자동으로 텔레그램 채팅방 애니메이션 및 결과 정산 진행
     setTimeout(async () => {
       const currentRace = races[chatId];
-      if (currentRace && currentRace.state === 'betting' && currentRace.messageId) {
+      if (currentRace && currentRace.state === 'betting') {
         try {
-          await bot.telegram.editMessageReplyMarkup(
-            chatId,
-            currentRace.messageId,
-            null,
-            getRaceBettingKeyboard(currentRace).reply_markup
-          );
+          await runVerticalRaceAnimation(chatId, ctx);
         } catch (e) {}
       }
-    }, 10100);
+    }, 60000);
   }
 
   async function runVerticalRaceAnimation(chatId, ctx) {

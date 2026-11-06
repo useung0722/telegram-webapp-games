@@ -487,24 +487,44 @@
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
-      tgUser = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      tgUser = (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || null;
     }
 
-    const currentUserId = (tgUser && tgUser.id) ? String(tgUser.id) : ('guest_' + Math.floor(Math.random() * 8999 + 1000));
-    const currentUserName = (tgUser && (tgUser.first_name || tgUser.username)) ? (tgUser.first_name || tgUser.username) : '사원';
+    // 1204945384 등 실제 텔레그램 사용자 ID 매핑
+    let currentUserId = (tgUser && tgUser.id) ? String(tgUser.id) : null;
+    let currentUserName = (tgUser && (tgUser.first_name || tgUser.username)) ? (tgUser.first_name || tgUser.username) : '익명';
 
-    let userPoints = 10000;
+    // 로컬스토리지 보존 (ID 유지)
+    if (!currentUserId) {
+      currentUserId = localStorage.getItem('race_user_id');
+      if (!currentUserId) {
+        currentUserId = 'guest_' + Math.floor(Math.random() * 89999 + 10000);
+        localStorage.setItem('race_user_id', currentUserId);
+      }
+    }
+    if (currentUserName === '익명') {
+      currentUserName = localStorage.getItem('race_user_name') || currentUserName;
+    }
+
+    let userPoints = 0;
 
     // 지갑 포인트 불러오기
-    fetch(`/api/wallet?user_id=${currentUserId}`)
-      .then(r => r.json())
-      .then(w => {
-        if (w && typeof w.points === 'number') {
-          userPoints = w.points;
-          updatePointsDisplay();
-        }
-      })
-      .catch(() => {});
+    function fetchWallet() {
+      fetch(`/api/wallet?user_id=${currentUserId}`)
+        .then(r => r.json())
+        .then(w => {
+          if (w && typeof w.points === 'number') {
+            userPoints = w.points;
+            if (w.name && w.name !== '익명') {
+              currentUserName = w.name;
+              localStorage.setItem('race_user_name', w.name);
+            }
+            updatePointsDisplay();
+          }
+        })
+        .catch(() => {});
+    }
+    fetchWallet();
 
     function updatePointsDisplay() {
       document.getElementById('userPointsDisplay').textContent = `${userPoints.toLocaleString()} P`;
@@ -600,8 +620,12 @@
 
     function sendBet(horseId, amountVal) {
       let amount = (amountVal === 'all') ? userPoints : parseInt(amountVal, 10);
-      if (amount <= 0 || userPoints < amount) {
-        alert('포인트가 부족합니다!');
+      if (amount <= 0) {
+        alert('배팅할 포인트가 없습니다!');
+        return;
+      }
+      if (userPoints < amount) {
+        alert(`포인트가 부족합니다! (보유: ${userPoints.toLocaleString()}P)`);
         return;
       }
 
@@ -609,9 +633,9 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          race_id: raceId,
-          user_id: currentUserId,
-          user_name: currentUserName,
+          race_id: String(raceId),
+          user_id: String(currentUserId),
+          user_name: String(currentUserName),
           horse_id: horseId,
           amount
         })
@@ -622,11 +646,14 @@
           userPoints = res.remain_points;
           updatePointsDisplay();
           spawnFloatingEmoji('💸');
+          alert(`✅ ${horseId}번 말에 ${amount.toLocaleString()}P 투자 완료!`);
         } else {
           alert(res.message || '배팅 실패');
         }
       })
-      .catch(() => {});
+      .catch(err => {
+        alert('배팅 통신 오류: ' + err.message);
+      });
     }
 
     // SSE 구독 (모두가 같은 이모티콘과 배팅 정보를 실시간 수신)
@@ -647,26 +674,44 @@
     });
 
     // ========================================================
-    // ⏱️ 1분 카운트다운 후 자동 60FPS 무중단 출발
+    // ⏱️ 서버 시간 기반 카운트다운 동기화 (모두가 같은 타이밍에 출발)
     // ========================================================
-    const BETTING_DURATION = 60; // 60초 (1분)
     let isRacing = false;
-    let bettingRemaining = BETTING_DURATION;
+    let raceStartTime = null;
 
-    const countdownInterval = setInterval(() => {
-      bettingRemaining--;
-      if (bettingRemaining > 0) {
-        const mm = String(Math.floor(bettingRemaining / 60)).padStart(2, '0');
-        const ss = String(bettingRemaining % 60).padStart(2, '0');
-        document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
-      } else {
-        clearInterval(countdownInterval);
-        startRaceNow();
-      }
-    }, 1000);
+    function syncWithServerRoom() {
+      fetch(`/api/room?race_id=${raceId}`)
+        .then(r => r.json())
+        .then(room => {
+          if (!room) return;
+
+          const remaining = Math.max(0, Math.floor(room.remaining_sec));
+          if (remaining > 0) {
+            const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+            const ss = String(remaining % 60).padStart(2, '0');
+            document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
+          } else {
+            if (!isRacing) {
+              startRaceNow();
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    // 1초마다 서버와 남은시간 정밀 동기화
+    syncWithServerRoom();
+    const countdownInterval = setInterval(syncWithServerRoom, 1000);
 
     function startRaceNow() {
+      if (isRacing) return;
       isRacing = true;
+      clearInterval(countdownInterval);
+
+      // 배팅 바 비활성화/숨김
+      const bettingBar = document.getElementById('bettingBar');
+      if (bettingBar) bettingBar.style.display = 'none';
+
       document.getElementById('statusTag').textContent = '하향 집계 중';
       document.getElementById('statusTag').style.background = '#d83b01';
       document.getElementById('raceStatusText').textContent = '세로 통계 매크로 연속 주행 중...';
