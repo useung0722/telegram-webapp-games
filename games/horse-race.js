@@ -340,7 +340,7 @@ function getRaceBettingKeyboard(race) {
   // 📊 사내 위장 엑셀 텔레그램 Mini App Direct Link 생성
   const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
   const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
-  const miniAppUrl = `https://t.me/oceanspybot/race?startapp=${startParam}`;
+  const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
 
   if (remainingSec > 0) {
     horseButtons.push([
@@ -521,7 +521,7 @@ function initHorseRace(bot, helpers) {
     const threadId = race.threadId || getThreadId(ctx) || GAME_THREAD_ID;
     const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
     const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
-    const miniAppUrl = `https://t.me/oceanspybot/race?startapp=${startParam}`;
+    const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
 
     const liveExtra = {
       parse_mode: 'Markdown',
