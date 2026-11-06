@@ -351,9 +351,9 @@ function getRaceBettingKeyboard(race) {
     ]);
   }
 
-  // 엑셀 웹앱 관전 버튼 상시 노출
+  // 엑셀 웹앱 관전 버튼 상시 노출 (그룹방 호환 URL 버튼)
   horseButtons.push([
-    Markup.button.webApp('📊 [사내위장] 엑셀 스프레드시트 관전', webAppUrl)
+    Markup.button.url('📊 [사내위장] 엑셀 스프레드시트 관전', webAppUrl)
   ]);
 
   return Markup.inlineKeyboard(horseButtons);
@@ -524,7 +524,7 @@ function initHorseRace(bot, helpers) {
     const liveExtra = {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.webApp('📊 [사내위장] 엑셀 실시간 중계 화면 보기', webAppUrl)]
+        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', webAppUrl)]
       ])
     };
     if (threadId) liveExtra.message_thread_id = threadId;
@@ -595,7 +595,7 @@ function initHorseRace(bot, helpers) {
         `🤫 *(경주 중 대화 임시 제한)*`;
 
       const liveMarkup = Markup.inlineKeyboard([
-        [Markup.button.webApp('📊 [사내위장] 엑셀 실시간 중계 화면 보기', webAppUrl)]
+        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', webAppUrl)]
       ]);
 
       try {
