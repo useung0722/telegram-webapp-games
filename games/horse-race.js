@@ -306,6 +306,17 @@ function saveActiveRaces() {
   } catch (e) {}
 }
 
+function syncBetsFromDisk(chatId) {
+  try {
+    if (!fs.existsSync(ACTIVE_RACES_FILE)) return;
+    const data = JSON.parse(fs.readFileSync(ACTIVE_RACES_FILE, 'utf8'));
+    const diskRace = data[chatId];
+    if (diskRace && diskRace.bets && races[chatId]) {
+      races[chatId].bets = new Map(diskRace.bets);
+    }
+  } catch (e) {}
+}
+
 function formatKstTime(timestamp) {
   const date = new Date(timestamp);
   // 한국 시간(KST, UTC+9) 계산
@@ -484,6 +495,9 @@ function initHorseRace(bot, helpers) {
     const race = races[chatId];
     if (!race || race.state !== 'betting') return;
 
+    // 경기 출발 직전 웹앱에서 들어온 배팅 동기화
+    syncBetsFromDisk(chatId);
+
     race.state = 'racing';
     saveActiveRaces();
 
@@ -542,6 +556,9 @@ function initHorseRace(bot, helpers) {
 
       if (anyFinished || turn >= 10) {
         clearInterval(interval);
+
+        // 시트(웹앱)에서 접수된 최신 배팅 동기화
+        syncBetsFromDisk(chatId);
 
         race.horses.sort((a, b) => {
           const scoreA = a.finishScore || a.progress;

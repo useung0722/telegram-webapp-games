@@ -849,14 +849,20 @@
       if (currentSec >= TOTAL_DURATION && !hasShownModal) {
         hasShownModal = true;
         setTimeout(() => {
+          fetchWallet(); // 최신 지갑 잔고 다시 가져오기
           const modal = document.getElementById('resultModal');
           const modalText = document.getElementById('modalText');
           modalText.innerHTML = `
             <strong>🏆 최종 최우수 달성 부서</strong><br><br>
-            <div style="font-size: 13px; font-weight: bold; color: #107c41; margin-bottom: 6px;">
+            <div style="font-size: 14px; font-weight: bold; color: #107c41; margin-bottom: 8px;">
               ${winnerRacer.emoji} ${winnerRacer.title} (${winnerRacer.dept})
             </div>
-            하향 데이터 집계가 결승선까지 완벽하게 검증 및 정산되었습니다.
+            <div style="font-size: 11px; color: #555; margin-bottom: 10px;">
+              하향 데이터 집계가 결승선까지 완벽하게 검증 및 정산되었습니다.
+            </div>
+            <div style="background: #eef2f5; padding: 8px; border-radius: 4px; font-size: 11px;">
+              💰 <strong>정산 후 보유 잔액</strong>: <span style="color:#107c41; font-weight:bold;">${userPoints.toLocaleString()} P</span>
+            </div>
           `;
           modal.style.display = 'block';
         }, 500);
