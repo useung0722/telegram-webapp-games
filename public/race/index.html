@@ -340,9 +340,32 @@
     ];
 
     const urlParams = new URLSearchParams(window.location.search);
-    const raceId = urlParams.get('id') || '101';
-    const seedVal = parseInt(urlParams.get('seed') || '123456', 10);
-    const horsesParam = urlParams.get('horses');
+    let raceId = urlParams.get('id');
+    let seedVal = urlParams.get('seed') ? parseInt(urlParams.get('seed'), 10) : null;
+    let horsesParam = urlParams.get('horses');
+
+    // 텔레그램 Mini App startapp 파라미터 지원 (tgWebAppStartParam)
+    let tgParam = null;
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+      tgParam = window.Telegram.WebApp.initDataUnsafe.start_param;
+    }
+    if (!tgParam) {
+      tgParam = urlParams.get('tgWebAppStartParam');
+    }
+    if (tgParam) {
+      // 형식: id_seed_horses (예: 101_777123_0-6-9)
+      const parts = tgParam.split('_');
+      if (parts.length >= 2) {
+        raceId = parts[0];
+        seedVal = parseInt(parts[1], 10);
+        if (parts[2]) {
+          horsesParam = parts[2].replace(/-/g, ',');
+        }
+      }
+    }
+
+    raceId = raceId || '101';
+    seedVal = seedVal || 123456;
 
     document.getElementById('seedBadge').textContent = `RACE #${raceId} | SEED: ${seedVal}`;
 

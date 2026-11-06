@@ -337,9 +337,10 @@ function getRaceBettingKeyboard(race) {
   const now = Date.now();
   const remainingSec = Math.ceil(((race.canStartAt || 0) - now) / 1000);
 
-  // 📊 사내 위장 엑셀 WebApp URL 생성
-  const horseIndices = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join(',');
-  const webAppUrl = `https://woojoo-notebook.tailca0746.ts.net/race/index.html?id=${race.raceNo}&seed=${race.seed || 101}&horses=${horseIndices}`;
+  // 📊 사내 위장 엑셀 텔레그램 Mini App Direct Link 생성
+  const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
+  const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
+  const miniAppUrl = `https://t.me/oceanspybot/race?startapp=${startParam}`;
 
   if (remainingSec > 0) {
     horseButtons.push([
@@ -351,9 +352,9 @@ function getRaceBettingKeyboard(race) {
     ]);
   }
 
-  // 엑셀 웹앱 관전 버튼 상시 노출 (그룹방 호환 URL 버튼)
+  // 엑셀 웹앱 관전 버튼 상시 노출 (텔레그램 인앱 미니앱 직행 링크)
   horseButtons.push([
-    Markup.button.url('📊 [사내위장] 엑셀 스프레드시트 관전', webAppUrl)
+    Markup.button.url('📊 [사내위장] 엑셀 스프레드시트 관전', miniAppUrl)
   ]);
 
   return Markup.inlineKeyboard(horseButtons);
@@ -518,13 +519,14 @@ function initHorseRace(bot, helpers) {
       `🤫 *(경주 중 대화 임시 제한)*`;
 
     const threadId = race.threadId || getThreadId(ctx) || GAME_THREAD_ID;
-    const horseIndices = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join(',');
-    const webAppUrl = `https://woojoo-notebook.tailca0746.ts.net/race/index.html?id=${race.raceNo}&seed=${race.seed || 101}&horses=${horseIndices}`;
+    const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
+    const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
+    const miniAppUrl = `https://t.me/oceanspybot/race?startapp=${startParam}`;
 
     const liveExtra = {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', webAppUrl)]
+        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', miniAppUrl)]
       ])
     };
     if (threadId) liveExtra.message_thread_id = threadId;
@@ -595,7 +597,7 @@ function initHorseRace(bot, helpers) {
         `🤫 *(경주 중 대화 임시 제한)*`;
 
       const liveMarkup = Markup.inlineKeyboard([
-        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', webAppUrl)]
+        [Markup.button.url('📊 [사내위장] 엑셀 실시간 중계 화면 보기', miniAppUrl)]
       ]);
 
       try {
