@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>2026_Q4_부서별_목표달성_지표_종합보고서.xlsx - Excel</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", "Malgun Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f3f2f1;
+      color: #212121;
+      font-size: 11px;
+    }
+    #appContainer {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 엑셀 녹색 타이틀바 */
+    .excel-header {
+      background: #107c41;
+      color: #ffffff;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .excel-title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .excel-window-btns {
+      display: flex;
+      gap: 12px;
+      font-family: monospace;
+      color: #e1dfdd;
+      flex-shrink: 0;
+    }
+
+    /* 리본 탭 */
+    .ribbon-tabs {
+      background: #107c41;
+      display: flex;
+      gap: 2px;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+    .ribbon-tab {
+      color: #ffffff;
+      padding: 3px 10px;
+      font-size: 11px;
+    }
+    .ribbon-tab.active {
+      background: #f3f2f1;
+      color: #107c41;
+      font-weight: 600;
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* 수식 입력줄 (Formula Bar) */
+    .formula-bar {
+      background: #ffffff;
+      border-bottom: 1px solid #d2d0ce;
+      display: flex;
+      align-items: center;
+      padding: 3px 8px;
+      gap: 6px;
+      font-family: Consolas, monospace;
+      flex-shrink: 0;
+    }
+    .cell-name-box {
+      border: 1px solid #e1dfdd;
+      padding: 2px 6px;
+      font-size: 11px;
+      min-width: 48px;
+      text-align: center;
+      background: #faf9f8;
+      color: #323130;
+      font-weight: 600;
+    }
+    .formula-fx {
+      color: #605e5c;
+      font-weight: bold;
+      font-style: italic;
+      font-size: 11px;
+      padding: 0 4px;
+    }
+    .formula-input {
+      flex: 1;
+      color: #201f1e;
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 위장 알림 바 */
+    .excel-alert-banner {
+      background: #fff4ce;
+      border-bottom: 1px solid #edebe9;
+      padding: 4px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #323130;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .alert-tag {
+      background: #797775;
+      color: #fff;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    /* 캔버스 뷰포트 */
+    .viewport {
+      flex: 1 1 0;
+      position: relative;
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+    }
+    canvas#raceCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 하단 시트 탭 & 상태 바 */
+    .sheet-tabs {
+      background: #f3f2f1;
+      border-top: 1px solid #d2d0ce;
+      display: flex;
+      align-items: center;
+      padding: 3px 8px;
+      gap: 4px;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .sheet-tab {
+      background: #ffffff;
+      border: 1px solid #d2d0ce;
+      border-bottom: 2px solid #107c41;
+      padding: 3px 12px;
+      font-weight: 600;
+      color: #107c41;
+    }
+    .sheet-tab-inactive {
+      padding: 3px 10px;
+      color: #605e5c;
+    }
+
+    .excel-status-bar {
+      background: #107c41;
+      color: #ffffff;
+      padding: 4px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-family: Consolas, sans-serif;
+      flex-shrink: 0;
+    }
+
+    /* 결과 모달 */
+    .excel-msgbox {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      border: 1px solid #797775;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 340px;
+      z-index: 999;
+      padding: 14px;
+    }
+    .msgbox-header {
+      font-weight: 600;
+      color: #107c41;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      border-bottom: 1px solid #edebe9;
+      padding-bottom: 6px;
+    }
+    .msgbox-body {
+      font-size: 11px;
+      color: #323130;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .msgbox-btn {
+      background: #107c41;
+      color: white;
+      border: none;
+      padding: 5px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      float: right;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="appContainer">
+    <!-- 1. 엑셀 타이틀바 -->
+    <div class="excel-header">
+      <div class="excel-title">
+        <span>📊</span>
+        <span>2026_Q4_부서별_목표달성_지표_종합보고서.xlsx - Excel</span>
+      </div>
+      <div class="excel-window-btns">
+        <span>─</span>
+        <span>□</span>
+        <span>✕</span>
+      </div>
+    </div>
+
+    <!-- 2. 리본 탭 -->
+    <div class="ribbon-tabs">
+      <div class="ribbon-tab">파일</div>
+      <div class="ribbon-tab active">홈</div>
+      <div class="ribbon-tab">수식</div>
+      <div class="ribbon-tab">데이터</div>
+      <div class="ribbon-tab">보기</div>
+    </div>
+
+    <!-- 3. 수식 입력줄 -->
+    <div class="formula-bar">
+      <div class="cell-name-box" id="activeCellName">B1</div>
+      <div class="formula-fx">fx</div>
+      <div class="formula-input" id="formulaText">=FORECAST.LINEAR(B1, $B$1:$B$15, $A$1:$A$15)</div>
+    </div>
+
+    <!-- 4. 상태 알림 배너 -->
+    <div class="excel-alert-banner">
+      <div>
+        <span class="alert-tag">하향 집계</span>
+        <span id="raceStatusText">세로 통계 매크로가 실행 중입니다...</span>
+      </div>
+      <div style="font-family: monospace; font-size: 10px;" id="timerDisplay">00:00.0</div>
+    </div>
+
+    <!-- 5. 엑셀 트랙 캔버스 -->
+    <div class="viewport" id="viewport">
+      <canvas id="raceCanvas"></canvas>
+    </div>
+
+    <!-- 6. 하단 시트 탭 -->
+    <div class="sheet-tabs">
+      <div class="sheet-tab">Q4_세로집계</div>
+      <div class="sheet-tab-inactive">전략기획_Raw</div>
+      <div class="sheet-tab-inactive">목표대비율</div>
+      <div style="margin-left: auto; color: #605e5c; font-size: 10px;" id="liveCommentary">
+        통계 데이터 연속 처리 중...
+      </div>
+    </div>
+
+    <!-- 7. 상태 표시줄 -->
+    <div class="excel-status-bar">
+      <div>준비 (Ready) | 평균: 106.8% | 개수: 3 | 합계: 320.4%</div>
+      <div id="seedBadge">SEED: SYNC-OK</div>
+    </div>
+  </div>
+
+  <!-- 8. 결과 팝업 -->
+  <div class="excel-msgbox" id="resultModal">
+    <div class="msgbox-header">
+      <span>ℹ️</span>
+      <span>Microsoft Excel - 하향 분석 완료</span>
+    </div>
+    <div class="msgbox-body" id="modalText">
+      집계가 성공적으로 완료되었습니다.
+    </div>
+    <button class="msgbox-btn" onclick="closeModal()">확인 (Enter)</button>
+  </div>
+
+  <script>
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+
+    function mulberry32(a) {
+      return function() {
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    const RACER_POOL = [
+      { name: '치타', emoji: '🐆', title: '총알탄치타', dept: '신사업전략실' },
+      { name: '경주마', emoji: '🐎', title: '야근탈출마', dept: '인재개발팀' },
+      { name: '호랑이', emoji: '🐅', title: '어흥맹호', dept: '글로벌영업본부' },
+      { name: '늑대', emoji: '🐺', title: '추격늑대', dept: '경영감사실' },
+      { name: '토끼', emoji: '🐇', title: '도발토끼', dept: '커뮤니케이션팀' },
+      { name: '돼지', emoji: '🐖', title: '폭식돈돈', dept: '재무회계팀' },
+      { name: '거북이', emoji: '🐢', title: '용궁거북', dept: '기획조정실' },
+      { name: '달팽이', emoji: '🐌', title: '우주달팽이', dept: '연구개발원' },
+      { name: '새', emoji: '🕊️', title: '돌풍참새', dept: '항공물류TF' },
+      { name: '원숭이', emoji: '🐒', title: '바나나원숭', dept: '마케팅랩' },
+      { name: '가재', emoji: '🦞', title: '유턴가재', dept: '품질관리팀' },
+      { name: '치와와', emoji: '🐕', title: '광견치와와', dept: '보안안전팀' }
+    ];
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const raceId = urlParams.get('id') || '101';
+    const seedVal = parseInt(urlParams.get('seed') || '123456', 10);
+    const horsesParam = urlParams.get('horses');
+
+    document.getElementById('seedBadge').textContent = `RACE #${raceId} | SEED: ${seedVal}`;
+
+    const rnd = mulberry32(seedVal);
+
+    let racers = [];
+    if (horsesParam) {
+      const indices = horsesParam.split(',').map(n => parseInt(n.trim(), 10));
+      racers = indices.map(i => JSON.parse(JSON.stringify(RACER_POOL[i % RACER_POOL.length])));
+    } else {
+      const shuffled = [...RACER_POOL].sort(() => rnd() - 0.5);
+      racers = shuffled.slice(0, 3).map(r => JSON.parse(JSON.stringify(r)));
+    }
+
+    const FINISH_LINE = 15;
+    const TOTAL_ROWS = 15;
+
+    const mockData = [
+      ['기초 환경설정', '91.5%', '₩12,850'],
+      ['분기 매출집계', '93.0%', '₩13,700'],
+      ['목표액 산출', '94.5%', '₩14,550'],
+      ['변동률 분석', '96.0%', '₩15,400'],
+      ['고객 만족도', '97.5%', '₩16,250'],
+      ['운영비용 정산', '99.0%', '₩17,100'],
+      ['원가 절감율', '100.5%', '₩17,950'],
+      ['신규 계약액', '102.0%', '₩18,800'],
+      ['지표 표준화', '103.5%', '₩19,650'],
+      ['시장 점유율', '105.0%', '₩20,500'],
+      ['부서 협업도', '106.5%', '₩21,350'],
+      ['품질 평가치', '108.0%', '₩22,200'],
+      ['예산 실집행', '109.5%', '₩23,050'],
+      ['영업이익률', '111.0%', '₩23,900'],
+      ['성장 모멘텀', '112.5%', '₩24,750']
+    ];
+
+    // ========================================================
+    // 🚀 연속 물리 엔진 (Continuous Physics Simulation)
+    // ========================================================
+    const DT = 1 / 60;
+    const timeline = [];
+
+    const profiles = racers.map(r => ({
+      name: r.name,
+      pos: 0,
+      vel: 0.15,
+      baseSpeed: 1.1 + rnd() * 0.15,
+      effect: ''
+    }));
+
+    let winnerIdx = -1;
+    let finishTime = 0;
+    const MAX_STEPS = 60 * 35;
+
+    for (let step = 0; step < MAX_STEPS; step++) {
+      const curTime = step * DT;
+
+      for (let i = 0; i < 3; i++) {
+        const p = profiles[i];
+        if (p.pos >= FINISH_LINE) continue;
+
+        let targetSpeed = p.baseSpeed;
+
+        if (p.name === '치타') {
+          targetSpeed = curTime < 4.5 ? 2.2 : 0.82;
+        } else if (p.name === '경주마') {
+          targetSpeed = 1.25 + Math.sin(curTime * 1.5) * 0.12;
+        } else if (p.name === '호랑이') {
+          if (curTime > 3 && curTime < 6) {
+            targetSpeed = 1.75;
+            p.effect = '🔥';
+          }
+        } else if (p.name === '늑대') {
+          targetSpeed = curTime > 5 ? 1.65 : 0.95;
+          if (curTime > 5) p.effect = '🌪️';
+        } else if (p.name === '토끼') {
+          const cycle = curTime % 4;
+          targetSpeed = cycle < 2.5 ? 1.7 : 0.35;
+          p.effect = cycle >= 2.5 ? '💤' : '💨';
+        } else if (p.name === '돼지') {
+          targetSpeed = 1.15;
+        } else if (p.name === '거북이') {
+          if (curTime < 6.5) {
+            targetSpeed = 0.55;
+          } else {
+            targetSpeed = 2.45;
+            p.effect = '🚀';
+          }
+        } else if (p.name === '달팽이') {
+          targetSpeed = (curTime > 7 && curTime < 9.5) ? 2.8 : 0.45;
+          if (curTime > 7 && curTime < 9.5) p.effect = '⚡️';
+        } else if (p.name === '새') {
+          targetSpeed = (curTime > 5 && rnd() < 0.6) ? 3.0 : 0.35;
+          if (targetSpeed > 2.0) p.effect = '🦅';
+        } else if (p.name === '원숭이') {
+          targetSpeed = 1.2 + Math.cos(curTime * 2) * 0.25;
+          if (curTime > 4 && curTime < 5.5) p.effect = '🍌';
+        } else if (p.name === '가재') {
+          targetSpeed = 1.35;
+        } else if (p.name === '치와와') {
+          targetSpeed = curTime < 2 ? 2.4 : 1.0;
+          if (curTime < 2) p.effect = '🚨';
+        }
+
+        targetSpeed += (rnd() - 0.5) * 0.12;
+        p.vel += (targetSpeed - p.vel) * 0.08;
+        p.pos += p.vel * DT;
+      }
+
+      for (let i = 0; i < 3; i++) {
+        if (profiles[i].pos >= FINISH_LINE && winnerIdx === -1) {
+          winnerIdx = i;
+          finishTime = curTime;
+        }
+      }
+
+      timeline.push({
+        t: curTime,
+        positions: [profiles[0].pos, profiles[1].pos, profiles[2].pos],
+        effects: [profiles[0].effect, profiles[1].effect, profiles[2].effect]
+      });
+
+      if (winnerIdx !== -1 && curTime > finishTime + 0.8) break;
+    }
+
+    const winnerRacer = racers[winnerIdx !== -1 ? winnerIdx : 0];
+    const TOTAL_DURATION = timeline[timeline.length - 1].t;
+
+    // ========================================================
+    // 🎨 호환성 100% Canvas 렌더러
+    // ========================================================
+    const canvas = document.getElementById('raceCanvas');
+    const ctx = canvas.getContext('2d');
+    const viewport = document.getElementById('viewport');
+
+    let viewW = 400, viewH = 600;
+
+    function resizeCanvas() {
+      viewW = viewport.clientWidth || window.innerWidth || 400;
+      viewH = viewport.clientHeight || 500;
+      canvas.width = viewW;
+      canvas.height = viewH;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const ROW_HEADER_W = 36;
+    const CELL_H = 46;
+    const HEADER_H = 34;
+
+    let cameraScrollY = 0;
+    const startTime = performance.now();
+    let hasShownModal = false;
+
+    // 구형 브라우저 완벽 호환 roundRect 폴리필
+    function drawBadge(ctx, x, y, w, h, radius, text) {
+      ctx.fillStyle = '#107c41';
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + w / 2, y + h / 2);
+    }
+
+    function renderLoop(now) {
+      if (viewW === 0 || viewH === 0) {
+        resizeCanvas();
+      }
+
+      const elapsed = Math.max(0, (now - startTime) / 1000);
+      const currentSec = Math.min(TOTAL_DURATION, elapsed);
+
+      // 타이머 디스플레이
+      const sec = Math.floor(currentSec);
+      const ms = Math.floor((currentSec % 1) * 10);
+      document.getElementById('timerDisplay').textContent = `00:${sec < 10 ? '0' : ''}${sec}.${ms}`;
+
+      // 타임라인 프레임 검색
+      const frameIdx = Math.min(timeline.length - 1, Math.floor(currentSec / DT));
+      const frame = timeline[frameIdx];
+
+      const laneW = Math.max(80, (viewW - ROW_HEADER_W) / 3);
+
+      let maxPos = 0;
+      let leaderLane = 0;
+      for (let i = 0; i < 3; i++) {
+        if (frame.positions[i] > maxPos) {
+          maxPos = frame.positions[i];
+          leaderLane = i;
+        }
+      }
+
+      // 카메라 오토 스크롤
+      const leaderY = maxPos * CELL_H;
+      const targetScroll = Math.max(0, leaderY - viewH / 2 + 100);
+      cameraScrollY += (targetScroll - cameraScrollY) * 0.12;
+
+      // 1. 전체 캔버스 클리어
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, viewW, viewH);
+
+      ctx.save();
+      ctx.translate(0, -cameraScrollY + HEADER_H);
+
+      // 2. 엑셀 셀 & 행 렌더링 (1~15행 + 결승선 행)
+      for (let r = 1; r <= TOTAL_ROWS + 1; r++) {
+        const y = (r - 1) * CELL_H;
+        const isFinish = (r === TOTAL_ROWS + 1);
+
+        // 행 헤더
+        ctx.fillStyle = isFinish ? '#fce8e6' : '#f3f2f1';
+        ctx.fillRect(0, y, ROW_HEADER_W, CELL_H);
+        ctx.strokeStyle = '#e1dfdd';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, y, ROW_HEADER_W, CELL_H);
+
+        ctx.fillStyle = isFinish ? '#a4262c' : '#605e5c';
+        ctx.font = isFinish ? 'bold 12px sans-serif' : 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(isFinish ? '🏁' : `${r}`, ROW_HEADER_W / 2, y + CELL_H / 2);
+
+        // 3개 레인 셀
+        for (let c = 0; c < 3; c++) {
+          const x = ROW_HEADER_W + c * laneW;
+          const pos = frame.positions[c];
+          const isPassed = !isFinish && (pos >= r);
+
+          ctx.fillStyle = isFinish ? '#fff0f0' : (isPassed ? '#f2f9f4' : '#ffffff');
+          ctx.fillRect(x, y, laneW, CELL_H);
+
+          ctx.strokeStyle = isFinish ? '#d83b01' : '#e1dfdd';
+          ctx.strokeRect(x, y, laneW, CELL_H);
+
+          ctx.font = '10px Consolas, sans-serif';
+          ctx.fillStyle = '#797775';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (isFinish) {
+            ctx.fillStyle = '#a4262c';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText('🎯 결승 골인', x + laneW / 2, y + CELL_H / 2);
+          } else {
+            const rowData = mockData[r - 1] || ['', '', ''];
+            ctx.fillText(rowData[c] || '', x + laneW / 2, y + CELL_H / 2);
+          }
+        }
+      }
+
+      // 3. 동물 러너 3마리 렌더링
+      for (let i = 0; i < 3; i++) {
+        const x = ROW_HEADER_W + i * laneW + laneW / 2;
+        const pos = Math.min(FINISH_LINE + 0.3, frame.positions[i]);
+        const y = pos * CELL_H;
+
+        ctx.save();
+        ctx.translate(x, y);
+
+        // 달리는 미세 틸팅 모션
+        const sway = Math.sin(now * 0.025 + i * 2) * 0.08;
+        ctx.rotate(sway);
+
+        // 그림자
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        ctx.beginPath();
+        ctx.ellipse(0, 18, 14, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 흰색 원형 바디
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#107c41';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // 동물 이모지
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(racers[i].emoji, 0, 1);
+
+        // 번호 배지
+        drawBadge(ctx, -12, -26, 24, 12, 4, `${i + 1}번`);
+
+        // 스킬 이펙트
+        const eff = frame.effects[i];
+        if (eff) {
+          ctx.font = '16px sans-serif';
+          ctx.fillText(eff, 16, 14);
+        }
+
+        ctx.restore();
+      }
+
+      ctx.restore();
+
+      // 4. 고정 상단 헤더 (A, B, C 열 머리글)
+      ctx.fillStyle = '#f3f2f1';
+      ctx.fillRect(0, 0, viewW, HEADER_H);
+      ctx.strokeStyle = '#d2d0ce';
+      ctx.strokeRect(0, 0, viewW, HEADER_H);
+
+      ctx.fillStyle = '#605e5c';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('', ROW_HEADER_W / 2, HEADER_H / 2);
+
+      for (let c = 0; c < 3; c++) {
+        const x = ROW_HEADER_W + c * laneW;
+        ctx.strokeRect(x, 0, laneW, HEADER_H);
+
+        const r = racers[c];
+        ctx.fillStyle = '#201f1e';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(`${String.fromCharCode(65 + c)}: ${r.emoji} ${r.title}`, x + laneW / 2, HEADER_H / 2);
+      }
+
+      // 상단 배너 & 수식줄 갱신
+      const colLetter = String.fromCharCode(65 + leaderLane);
+      const rowNum = Math.max(1, Math.min(15, Math.round(maxPos)));
+      document.getElementById('activeCellName').textContent = `${colLetter}${rowNum}`;
+      document.getElementById('formulaText').textContent = `=VLOOKUP("${racers[leaderLane].title}", $${colLetter}$1:$${colLetter}$16, 1, FALSE)`;
+
+      document.getElementById('raceStatusText').textContent =
+        currentSec >= TOTAL_DURATION
+          ? `집계 완료! [최우수 부서: ${winnerRacer.title} (${winnerRacer.dept})]`
+          : `세로 통계 매크로 연속 주행 중...`;
+
+      // 골인 모달
+      if (currentSec >= TOTAL_DURATION && !hasShownModal) {
+        hasShownModal = true;
+        setTimeout(() => {
+          const modal = document.getElementById('resultModal');
+          const modalText = document.getElementById('modalText');
+          modalText.innerHTML = `
+            <strong>🏆 최종 최우수 달성 부서</strong><br><br>
+            <div style="font-size: 13px; font-weight: bold; color: #107c41; margin-bottom: 6px;">
+              ${winnerRacer.emoji} ${winnerRacer.title} (${winnerRacer.dept})
+            </div>
+            하향 데이터 집계가 결승선까지 완벽하게 검증 및 정산되었습니다.
+          `;
+          modal.style.display = 'block';
+        }, 500);
+      }
+
+      if (currentSec < TOTAL_DURATION || !hasShownModal) {
+        requestAnimationFrame(renderLoop);
+      }
+    }
+
+    requestAnimationFrame(renderLoop);
+
+    function closeModal() {
+      document.getElementById('resultModal').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
