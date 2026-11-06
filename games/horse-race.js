@@ -434,7 +434,7 @@ function initHorseRace(bot, helpers) {
       threadId,
       state: 'betting',
       createdAt: Date.now(),
-      canStartAt: Date.now() + 10000, // 최소 10초 대기
+      canStartAt: Date.now() + 60000,
       horses: selectedRacers.map((r, idx) => ({
         id: idx + 1,
         name: r.name,
@@ -450,6 +450,10 @@ function initHorseRace(bot, helpers) {
       messageId: null
     };
 
+    // 1️⃣ 시트(서버 룸 데이터 active_races)부터 완벽하게 먼저 생성 & 저장 확정
+    saveActiveRaces();
+
+    // 2️⃣ 시트에 확정된 데이터 그대로 텔레그램 공지 및 입장 버튼 발송
     const sent = await ctx.reply(getRaceBettingText(races[chatId]), {
       parse_mode: 'Markdown',
       ...getRaceBettingKeyboard(races[chatId])
