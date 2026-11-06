@@ -199,7 +199,7 @@
       }
     }
 
-    /* 하단 실시간 배팅 & 응원 컨트롤 바 (시트 하단에 고정) */
+    /* 하단 실시간 배팅 & 응원 컨트롤 바 */
     .betting-control-bar {
       background: #f8f9fa;
       border-top: 2px solid #107c41;
@@ -243,11 +243,6 @@
       gap: 2px;
       cursor: pointer;
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-      transition: all 0.15s;
-    }
-    .bet-card-btn:active {
-      background: #e1dfdd;
-      transform: scale(0.97);
     }
     .bet-card-title {
       font-weight: bold;
@@ -271,7 +266,7 @@
       flex: 1;
       background: #f3f2f1;
       border: 1px solid #e1dfdd;
-      padding: 2px 0;
+      padding: 3px 0;
       font-size: 9px;
       border-radius: 2px;
       font-weight: 600;
@@ -283,7 +278,7 @@
       color: #fff;
     }
 
-    /* 인스타 라이브 응원 이모티콘 연타 바 */
+    /* 인스타 라이브 응원 이모티콘 바 */
     .reaction-bar {
       display: flex;
       align-items: center;
@@ -394,7 +389,7 @@
       <div class="formula-input" id="formulaText">=FORECAST.LINEAR(B1, $B$1:$B$15, $A$1:$A$15)</div>
     </div>
 
-    <!-- 4. 위장 배너 (배팅 마감 및 출발 1분 카운트다운) -->
+    <!-- 4. 위장 배너 (1분 카운트다운 타이머 & 상태) -->
     <div class="excel-alert-banner">
       <div>
         <span class="alert-tag" id="statusTag">배팅 진행 중</span>
@@ -414,14 +409,13 @@
     <div class="betting-control-bar" id="bettingBar">
       <div class="bet-header-row">
         <span>💼 <strong>부서별 지분 투자 (배팅)</strong></span>
-        <span>보유 잔액: <span class="user-point-badge" id="userPointsDisplay">10,000 P</span></span>
+        <span>보유 잔액: <span class="user-point-badge" id="userPointsDisplay">0 P</span></span>
       </div>
 
       <!-- 3마리 배팅 카드 -->
       <div class="bet-cards-row" id="betCardsRow">
-        <!-- 1번마 -->
         <div class="bet-card-btn">
-          <div class="bet-card-title"><span id="cardEmoji0">🐆</span> <span id="cardTitle0">1번</span></div>
+          <div class="bet-card-title"><span id="cardEmoji0">🐎</span> <span id="cardTitle0">1번</span></div>
           <div class="bet-card-sub" id="cardOdds0">2.2x</div>
           <div class="bet-quick-btns">
             <button class="btn-quick" onclick="sendBet(1, 1000)">+1천</button>
@@ -429,9 +423,8 @@
             <button class="btn-quick" onclick="sendBet(1, 'all')">올인</button>
           </div>
         </div>
-        <!-- 2번마 -->
         <div class="bet-card-btn">
-          <div class="bet-card-title"><span id="cardEmoji1">🐎</span> <span id="cardTitle1">2번</span></div>
+          <div class="bet-card-title"><span id="cardEmoji1">🐖</span> <span id="cardTitle1">2번</span></div>
           <div class="bet-card-sub" id="cardOdds1">3.5x</div>
           <div class="bet-quick-btns">
             <button class="btn-quick" onclick="sendBet(2, 1000)">+1천</button>
@@ -439,9 +432,8 @@
             <button class="btn-quick" onclick="sendBet(2, 'all')">올인</button>
           </div>
         </div>
-        <!-- 3번마 -->
         <div class="bet-card-btn">
-          <div class="bet-card-title"><span id="cardEmoji2">🐢</span> <span id="cardTitle2">3번</span></div>
+          <div class="bet-card-title"><span id="cardEmoji2">🐕</span> <span id="cardTitle2">3번</span></div>
           <div class="bet-card-sub" id="cardOdds2">6.5x</div>
           <div class="bet-quick-btns">
             <button class="btn-quick" onclick="sendBet(3, 1000)">+1천</button>
@@ -483,6 +475,7 @@
   </div>
 
   <script>
+    // 텔레그램 WebApp SDK 초기화
     let tgUser = null;
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
@@ -490,25 +483,21 @@
       tgUser = (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || null;
     }
 
-    // 1204945384 등 실제 텔레그램 사용자 ID 매핑
     let currentUserId = (tgUser && tgUser.id) ? String(tgUser.id) : null;
     let currentUserName = (tgUser && (tgUser.first_name || tgUser.username)) ? (tgUser.first_name || tgUser.username) : '익명';
 
-    // 로컬스토리지 보존 (ID 유지)
     if (!currentUserId) {
       currentUserId = localStorage.getItem('race_user_id');
       if (!currentUserId) {
-        currentUserId = 'guest_' + Math.floor(Math.random() * 89999 + 10000);
+        currentUserId = '1204945384'; // 기본 매핑
         localStorage.setItem('race_user_id', currentUserId);
       }
     }
     if (currentUserName === '익명') {
-      currentUserName = localStorage.getItem('race_user_name') || currentUserName;
+      currentUserName = localStorage.getItem('race_user_name') || '우성 이';
     }
 
     let userPoints = 0;
-
-    // 지갑 포인트 불러오기
     function fetchWallet() {
       fetch(`/api/wallet?user_id=${currentUserId}`)
         .then(r => r.json())
@@ -556,9 +545,8 @@
 
     // 파라미터 파싱
     const urlParams = new URLSearchParams(window.location.search);
-    let raceId = urlParams.get('id');
-    let seedVal = urlParams.get('seed') ? parseInt(urlParams.get('seed'), 10) : null;
-    let horsesParam = urlParams.get('horses');
+    let raceId = urlParams.get('id') || 'latest';
+    let seedVal = 123456;
 
     let tgParam = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe)
       ? window.Telegram.WebApp.initDataUnsafe.start_param
@@ -566,40 +554,82 @@
 
     if (tgParam) {
       const parts = tgParam.split('_');
-      if (parts.length >= 2) {
-        raceId = parts[0];
-        seedVal = parseInt(parts[1], 10);
-        if (parts[2]) horsesParam = parts[2].replace(/-/g, ',');
+      if (parts.length >= 1) raceId = parts[0];
+      if (parts.length >= 2) seedVal = parseInt(parts[1], 10) || 123456;
+    }
+
+    let rnd = mulberry32(seedVal);
+    let racers = [];
+    let timeline = [];
+    let TOTAL_DURATION = 15;
+    let winnerRacer = null;
+
+    // 기본 출전마 (서버 응답 전 임시)
+    racers = [
+      JSON.parse(JSON.stringify(RACER_POOL[1])), // 경주마
+      JSON.parse(JSON.stringify(RACER_POOL[5])), // 돼지
+      JSON.parse(JSON.stringify(RACER_POOL[11])) // 치와와
+    ];
+
+    function updateCardUI() {
+      for (let i = 0; i < 3; i++) {
+        if (racers[i]) {
+          document.getElementById(`cardEmoji${i}`).textContent = racers[i].emoji;
+          document.getElementById(`cardTitle${i}`).textContent = `${i + 1}번 ${racers[i].title}`;
+          document.getElementById(`cardOdds${i}`).textContent = `${racers[i].odds}x`;
+        }
       }
     }
+    updateCardUI();
 
-    raceId = raceId || '101';
-    seedVal = seedVal || 123456;
-    document.getElementById('seedBadge').textContent = `RACE #${raceId} | SEED: ${seedVal}`;
+    // 🚀 서버 active_races 및 룸 상태 100% 동기화
+    function syncWithServerRoom() {
+      fetch(`/api/room?race_id=${raceId}`)
+        .then(r => r.json())
+        .then(room => {
+          if (!room) return;
 
-    const rnd = mulberry32(seedVal);
+          // 1. 서버에 등록된 3마리 실제 동물 정보 및 배당률로 100% 동기화
+          if (room.horses && room.horses.length === 3) {
+            racers = room.horses.map(h => ({
+              id: h.id,
+              name: h.name,
+              emoji: h.emoji,
+              title: h.title,
+              odds: h.odds,
+              dept: (RACER_POOL.find(p => p.name === h.name) || {}).dept || '사업기획팀'
+            }));
+            updateCardUI();
+          }
 
-    let racers = [];
-    if (horsesParam) {
-      const indices = horsesParam.split(',').map(n => parseInt(n.trim(), 10));
-      racers = indices.map(i => JSON.parse(JSON.stringify(RACER_POOL[i % RACER_POOL.length])));
-    } else {
-      const shuffled = [...RACER_POOL].sort(() => rnd() - 0.5);
-      racers = shuffled.slice(0, 3).map(r => JSON.parse(JSON.stringify(r)));
-    }
+          if (room.seed) {
+            seedVal = room.seed;
+            rnd = mulberry32(seedVal);
+            document.getElementById('seedBadge').textContent = `RACE #${room.race_id} | SEED: ${seedVal}`;
+          }
 
-    // 배팅 카드 정보 업데이트
-    for (let i = 0; i < 3; i++) {
-      document.getElementById(`cardEmoji${i}`).textContent = racers[i].emoji;
-      document.getElementById(`cardTitle${i}`).textContent = `${i + 1}번 ${racers[i].title}`;
-      document.getElementById(`cardOdds${i}`).textContent = `${racers[i].odds}x`;
+          // 2. 물리 타임라인 재계산
+          buildPhysicsTimeline();
+
+          // 3. 서버 남은시간 카운트다운 동기화
+          const remaining = Math.max(0, Math.floor(room.remaining_sec));
+          if (remaining > 0) {
+            const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+            const ss = String(remaining % 60).padStart(2, '0');
+            document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
+          } else {
+            if (!isRacing) {
+              startRaceNow();
+            }
+          }
+        })
+        .catch(() => {});
     }
 
     // ========================================================
     // 💖 실시간 인스타 라이브 이모지 & 배팅 SSE 연동
     // ========================================================
     const reactionOverlay = document.getElementById('reactionOverlay');
-
     function spawnFloatingEmoji(emoji) {
       const el = document.createElement('div');
       el.className = 'floating-reaction';
@@ -656,7 +686,7 @@
       });
     }
 
-    // SSE 구독 (모두가 같은 이모티콘과 배팅 정보를 실시간 수신)
+    // SSE 구독
     const evtSource = new EventSource(`/api/events?race_id=${raceId}`);
     evtSource.addEventListener('reaction', e => {
       try {
@@ -667,48 +697,22 @@
     evtSource.addEventListener('bet', e => {
       try {
         const d = JSON.parse(e.data);
-        if (d) {
-          spawnFloatingEmoji('💸');
-        }
+        if (d) spawnFloatingEmoji('💸');
       } catch (err) {}
     });
 
-    // ========================================================
-    // ⏱️ 서버 시간 기반 카운트다운 동기화 (모두가 같은 타이밍에 출발)
-    // ========================================================
-    let isRacing = false;
-    let raceStartTime = null;
-
-    function syncWithServerRoom() {
-      fetch(`/api/room?race_id=${raceId}`)
-        .then(r => r.json())
-        .then(room => {
-          if (!room) return;
-
-          const remaining = Math.max(0, Math.floor(room.remaining_sec));
-          if (remaining > 0) {
-            const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
-            const ss = String(remaining % 60).padStart(2, '0');
-            document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
-          } else {
-            if (!isRacing) {
-              startRaceNow();
-            }
-          }
-        })
-        .catch(() => {});
-    }
-
-    // 1초마다 서버와 남은시간 정밀 동기화
+    // 1초마다 서버와 남은시간 및 동물 라인업 동기화
     syncWithServerRoom();
     const countdownInterval = setInterval(syncWithServerRoom, 1000);
+
+    let isRacing = false;
+    let raceStartTime = null;
 
     function startRaceNow() {
       if (isRacing) return;
       isRacing = true;
       clearInterval(countdownInterval);
 
-      // 배팅 바 비활성화/숨김
       const bettingBar = document.getElementById('bettingBar');
       if (bettingBar) bettingBar.style.display = 'none';
 
@@ -725,63 +729,66 @@
     const DT = 1 / 60;
     const FINISH_LINE = 15;
     const TOTAL_ROWS = 15;
-    const timeline = [];
 
-    const profiles = racers.map(r => ({
-      name: r.name,
-      pos: 0,
-      vel: 0.15,
-      baseSpeed: 1.1 + rnd() * 0.15,
-      effect: ''
-    }));
+    function buildPhysicsTimeline() {
+      timeline = [];
+      const profiles = racers.map(r => ({
+        name: r.name,
+        pos: 0,
+        vel: 0.15,
+        baseSpeed: 1.1 + rnd() * 0.15,
+        effect: ''
+      }));
 
-    let winnerIdx = -1;
-    let finishTime = 0;
-    const MAX_STEPS = 60 * 35;
+      let winnerIdx = -1;
+      let finishTime = 0;
+      const MAX_STEPS = 60 * 35;
 
-    for (let step = 0; step < MAX_STEPS; step++) {
-      const curTime = step * DT;
-      for (let i = 0; i < 3; i++) {
-        const p = profiles[i];
-        if (p.pos >= FINISH_LINE) continue;
+      for (let step = 0; step < MAX_STEPS; step++) {
+        const curTime = step * DT;
+        for (let i = 0; i < 3; i++) {
+          const p = profiles[i];
+          if (p.pos >= FINISH_LINE) continue;
 
-        let targetSpeed = p.baseSpeed;
-        if (p.name === '치타') targetSpeed = curTime < 4.5 ? 2.2 : 0.82;
-        else if (p.name === '경주마') targetSpeed = 1.25 + Math.sin(curTime * 1.5) * 0.12;
-        else if (p.name === '호랑이') { if (curTime > 3 && curTime < 6) { targetSpeed = 1.75; p.effect = '🔥'; } }
-        else if (p.name === '늑대') { targetSpeed = curTime > 5 ? 1.65 : 0.95; if (curTime > 5) p.effect = '🌪️'; }
-        else if (p.name === '토끼') { const cycle = curTime % 4; targetSpeed = cycle < 2.5 ? 1.7 : 0.35; p.effect = cycle >= 2.5 ? '💤' : '💨'; }
-        else if (p.name === '돼지') targetSpeed = 1.15;
-        else if (p.name === '거북이') { if (curTime < 6.5) targetSpeed = 0.55; else { targetSpeed = 2.45; p.effect = '🚀'; } }
-        else if (p.name === '달팽이') { targetSpeed = (curTime > 7 && curTime < 9.5) ? 2.8 : 0.45; if (curTime > 7 && curTime < 9.5) p.effect = '⚡️'; }
-        else if (p.name === '새') { targetSpeed = (curTime > 5 && rnd() < 0.6) ? 3.0 : 0.35; if (targetSpeed > 2.0) p.effect = '🦅'; }
-        else if (p.name === '원숭이') { targetSpeed = 1.2 + Math.cos(curTime * 2) * 0.25; if (curTime > 4 && curTime < 5.5) p.effect = '🍌'; }
-        else if (p.name === '가재') targetSpeed = 1.35;
-        else if (p.name === '치와와') { targetSpeed = curTime < 2 ? 2.4 : 1.0; if (curTime < 2) p.effect = '🚨'; }
+          let targetSpeed = p.baseSpeed;
+          if (p.name === '치타') targetSpeed = curTime < 4.5 ? 2.2 : 0.82;
+          else if (p.name === '경주마') targetSpeed = 1.25 + Math.sin(curTime * 1.5) * 0.12;
+          else if (p.name === '호랑이') { if (curTime > 3 && curTime < 6) { targetSpeed = 1.75; p.effect = '🔥'; } }
+          else if (p.name === '늑대') { targetSpeed = curTime > 5 ? 1.65 : 0.95; if (curTime > 5) p.effect = '🌪️'; }
+          else if (p.name === '토끼') { const cycle = curTime % 4; targetSpeed = cycle < 2.5 ? 1.7 : 0.35; p.effect = cycle >= 2.5 ? '💤' : '💨'; }
+          else if (p.name === '돼지') targetSpeed = 1.15;
+          else if (p.name === '거북이') { if (curTime < 6.5) targetSpeed = 0.55; else { targetSpeed = 2.45; p.effect = '🚀'; } }
+          else if (p.name === '달팽이') { targetSpeed = (curTime > 7 && curTime < 9.5) ? 2.8 : 0.45; if (curTime > 7 && curTime < 9.5) p.effect = '⚡️'; }
+          else if (p.name === '새') { targetSpeed = (curTime > 5 && rnd() < 0.6) ? 3.0 : 0.35; if (targetSpeed > 2.0) p.effect = '🦅'; }
+          else if (p.name === '원숭이') { targetSpeed = 1.2 + Math.cos(curTime * 2) * 0.25; if (curTime > 4 && curTime < 5.5) p.effect = '🍌'; }
+          else if (p.name === '가재') targetSpeed = 1.35;
+          else if (p.name === '치와와') { targetSpeed = curTime < 2 ? 2.4 : 1.0; if (curTime < 2) p.effect = '🚨'; }
 
-        targetSpeed += (rnd() - 0.5) * 0.12;
-        p.vel += (targetSpeed - p.vel) * 0.08;
-        p.pos += p.vel * DT;
-      }
-
-      for (let i = 0; i < 3; i++) {
-        if (profiles[i].pos >= FINISH_LINE && winnerIdx === -1) {
-          winnerIdx = i;
-          finishTime = curTime;
+          targetSpeed += (rnd() - 0.5) * 0.12;
+          p.vel += (targetSpeed - p.vel) * 0.08;
+          p.pos += p.vel * DT;
         }
+
+        for (let i = 0; i < 3; i++) {
+          if (profiles[i].pos >= FINISH_LINE && winnerIdx === -1) {
+            winnerIdx = i;
+            finishTime = curTime;
+          }
+        }
+
+        timeline.push({
+          t: curTime,
+          positions: [profiles[0].pos, profiles[1].pos, profiles[2].pos],
+          effects: [profiles[0].effect, profiles[1].effect, profiles[2].effect]
+        });
+
+        if (winnerIdx !== -1 && curTime > finishTime + 0.8) break;
       }
 
-      timeline.push({
-        t: curTime,
-        positions: [profiles[0].pos, profiles[1].pos, profiles[2].pos],
-        effects: [profiles[0].effect, profiles[1].effect, profiles[2].effect]
-      });
-
-      if (winnerIdx !== -1 && curTime > finishTime + 0.8) break;
+      winnerRacer = racers[winnerIdx !== -1 ? winnerIdx : 0];
+      TOTAL_DURATION = timeline[timeline.length - 1].t;
     }
-
-    const winnerRacer = racers[winnerIdx !== -1 ? winnerIdx : 0];
-    const TOTAL_DURATION = timeline[timeline.length - 1].t;
+    buildPhysicsTimeline();
 
     // ========================================================
     // 🎨 Canvas 렌더러
@@ -805,7 +812,6 @@
     const HEADER_H = 34;
 
     let cameraScrollY = 0;
-    let raceStartTime = null;
     let hasShownModal = false;
 
     function drawBadge(ctx, x, y, w, h, radius, text) {
@@ -823,7 +829,6 @@
 
     function renderLoop(now) {
       if (!isRacing) {
-        // 배팅 중일 때는 출발선(0단계) 렌더링
         renderFrame(0, [0, 0, 0], ['', '', ''], now);
         requestAnimationFrame(renderLoop);
         return;
@@ -955,7 +960,7 @@
         ctx.font = '20px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(racers[i].emoji, 0, 1);
+        ctx.fillText(racers[i] ? racers[i].emoji : '🐎', 0, 1);
 
         drawBadge(ctx, -12, -26, 24, 12, 4, `${i + 1}번`);
 
@@ -989,13 +994,15 @@
         const r = racers[c];
         ctx.fillStyle = '#201f1e';
         ctx.font = 'bold 11px sans-serif';
-        ctx.fillText(`${String.fromCharCode(65 + c)}: ${r.emoji} ${r.title}`, x + laneW / 2, HEADER_H / 2);
+        const titleStr = r ? `${r.emoji} ${r.title}` : `선수 ${c+1}`;
+        ctx.fillText(`${String.fromCharCode(65 + c)}: ${titleStr}`, x + laneW / 2, HEADER_H / 2);
       }
 
       const colLetter = String.fromCharCode(65 + leaderLane);
       const rowNum = Math.max(1, Math.min(15, Math.round(maxPos)));
       document.getElementById('activeCellName').textContent = `${colLetter}${rowNum}`;
-      document.getElementById('formulaText').textContent = `=VLOOKUP("${racers[leaderLane].title}", $${colLetter}$1:$${colLetter}$16, 1, FALSE)`;
+      const leaderTitle = racers[leaderLane] ? racers[leaderLane].title : '선두';
+      document.getElementById('formulaText').textContent = `=VLOOKUP("${leaderTitle}", $${colLetter}$1:$${colLetter}$16, 1, FALSE)`;
     }
 
     requestAnimationFrame(renderLoop);

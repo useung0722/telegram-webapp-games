@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 엑셀 경마 웹서버 + SSE (Server-Sent Events) 실시간 브로드캐스터
-- 서버 시간 기반 1분 카운트다운 동기화
-- 룸 상태 및 실시간 배팅/이모지 브로드캐스트
+- active_races.json 기반 100% 실시간 동물 라인업/배당률/서버시간 동기화
 """
 import os
 import sys
@@ -18,10 +17,6 @@ DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 subscribers = {}
 subscribers_lock = threading.Lock()
-
-# raceId -> {"createdAt": int, "duration": 60, "bets": [], "horses": []}
-rooms = {}
-rooms_lock = threading.Lock()
 
 WALLETS_FILE = os.path.join(DIRECTORY, "..", "wallets.json")
 ACTIVE_RACES_FILE = os.path.join(DIRECTORY, "..", "active_races.json")
@@ -41,6 +36,15 @@ def save_wallets(wallets):
             json.dump(wallets, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+def load_active_races():
+    try:
+        if os.path.exists(ACTIVE_RACES_FILE):
+            with open(ACTIVE_RACES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
 
 def broadcast(race_id, event_type, data):
     payload = f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n".encode("utf-8")
@@ -121,30 +125,47 @@ class RaceHandler(SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
 
-        # 3. 서버 룸 동기화 정보 (서버 생성시간, 남은시간 등)
+        # 3. 서버 활성 레이스 상태 조회 (활성 레이스 파일 직접 조회)
         elif url.path == "/api/room":
             query = parse_qs(url.query)
             race_id = query.get("race_id", ["default"])[0]
             now = int(time.time() * 1000)
 
-            with rooms_lock:
-                if race_id not in rooms:
-                    rooms[race_id] = {
-                        "createdAt": now,
-                        "duration": 60, # 60초 배팅
-                        "bets": []
-                    }
-                room = rooms[race_id]
-                elapsed = (now - room["createdAt"]) / 1000.0
-                remaining = max(0, room["duration"] - elapsed)
+            active = load_active_races()
+            matched_race = None
+            for chat_id, r in active.items():
+                if str(r.get("raceNo")) == str(race_id) or race_id == "latest" or race_id == "default":
+                    matched_race = r
+                    break
+
+            if matched_race:
+                created_at = matched_race.get("createdAt", now)
+                seed = matched_race.get("seed", 123456)
+                duration = 60 # 60초 배팅
+                elapsed = (now - created_at) / 1000.0
+                remaining = max(0, duration - elapsed)
+                resp = {
+                    "race_id": str(matched_race.get("raceNo")),
+                    "seed": seed,
+                    "server_time": now,
+                    "created_at": created_at,
+                    "duration": duration,
+                    "remaining_sec": remaining,
+                    "is_started": remaining <= 0 or matched_race.get("state") == "racing",
+                    "horses": matched_race.get("horses", []),
+                    "bets": matched_race.get("bets", [])
+                }
+            else:
                 resp = {
                     "race_id": race_id,
+                    "seed": 123456,
                     "server_time": now,
-                    "created_at": room["createdAt"],
-                    "duration": room["duration"],
-                    "remaining_sec": remaining,
-                    "is_started": remaining <= 0,
-                    "bets": room["bets"]
+                    "created_at": now,
+                    "duration": 60,
+                    "remaining_sec": 60,
+                    "is_started": False,
+                    "horses": [],
+                    "bets": []
                 }
 
             data = json.dumps(resp, ensure_ascii=False).encode("utf-8")
@@ -189,17 +210,26 @@ class RaceHandler(SimpleHTTPRequestHandler):
             horse_id = int(payload.get("horse_id", 1))
             amount = int(payload.get("amount", 1000))
 
+            active = load_active_races()
+            matched_race = None
+            matched_chat_id = None
+            for chat_id, r in active.items():
+                if str(r.get("raceNo")) == race_id or race_id == "latest":
+                    matched_race = r
+                    matched_chat_id = chat_id
+                    break
+
             now = int(time.time() * 1000)
-            with rooms_lock:
-                if race_id in rooms:
-                    elapsed = (now - rooms[race_id]["createdAt"]) / 1000.0
-                    if elapsed >= rooms[race_id]["duration"]:
-                        self.send_response(400)
-                        self.send_header("Content-Type", "application/json")
-                        self.send_header("Access-Control-Allow-Origin", "*")
-                        self.end_headers()
-                        self.wfile.write(json.dumps({"success": False, "message": "이미 배팅이 마감되었습니다!"}).encode("utf-8"))
-                        return
+            if matched_race:
+                created_at = matched_race.get("createdAt", now)
+                elapsed = (now - created_at) / 1000.0
+                if elapsed >= 60 or matched_race.get("state") == "racing":
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"success": False, "message": "이미 배팅이 마감되었습니다!"}).encode("utf-8"))
+                    return
 
             wallets = load_wallets()
             w = wallets.get(user_id, {"points": 10000, "name": user_name})
@@ -223,41 +253,29 @@ class RaceHandler(SimpleHTTPRequestHandler):
                 "timestamp": time.time()
             }
 
-            with rooms_lock:
-                if race_id not in rooms:
-                    rooms[race_id] = {"createdAt": now, "duration": 60, "bets": []}
-                rooms[race_id]["bets"].append(bet_record)
-
-            # active_races.json에도 동기화 기록 (결과 정산 및 환불 안전 보장)
-            try:
-                if os.path.exists(ACTIVE_RACES_FILE):
-                    with open(ACTIVE_RACES_FILE, "r", encoding="utf-8") as f:
-                        active = json.load(f)
-                    for chat_id, r in active.items():
-                        if str(r.get("raceNo")) == race_id:
-                            bets = r.get("bets", [])
-                            # 기존 배팅 누적
-                            found = False
-                            for b in bets:
-                                if str(b[0]) == user_id:
-                                    b[1]["amount"] += amount
-                                    b[1]["horseId"] = horse_id
-                                    found = True
-                                    break
-                            if not found:
-                                bets.append([user_id, {
-                                    "userId": user_id,
-                                    "name": user_name,
-                                    "horseId": horse_id,
-                                    "amount": amount,
-                                    "isAllIn": False
-                                }])
-                            r["bets"] = bets
-                            break
+            if matched_race and matched_chat_id:
+                bets = matched_race.get("bets", [])
+                found = False
+                for b in bets:
+                    if str(b[0]) == user_id:
+                        b[1]["amount"] += amount
+                        b[1]["horseId"] = horse_id
+                        found = True
+                        break
+                if not found:
+                    bets.append([user_id, {
+                        "userId": user_id,
+                        "name": user_name,
+                        "horseId": horse_id,
+                        "amount": amount,
+                        "isAllIn": False
+                    }])
+                matched_race["bets"] = bets
+                try:
                     with open(ACTIVE_RACES_FILE, "w", encoding="utf-8") as f:
                         json.dump(active, f, ensure_ascii=False, indent=2)
-            except Exception:
-                pass
+                except Exception:
+                    pass
 
             broadcast(race_id, "bet", bet_record)
 

@@ -283,6 +283,7 @@ function saveActiveRaces() {
     for (const [chatId, race] of Object.entries(races)) {
       serialized[chatId] = {
         raceNo: race.raceNo,
+        seed: race.seed,
         threadId: race.threadId,
         state: race.state,
         createdAt: race.createdAt,
