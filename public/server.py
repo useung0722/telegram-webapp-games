@@ -72,9 +72,12 @@ class RaceHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         url = urlparse(self.path)
+        path = url.path
+        if path.startswith("/race"):
+            path = path[5:]  # strip /race prefix
 
         # 1. SSE 실시간 이벤트 스트림
-        if url.path == "/api/events":
+        if path == "/api/events":
             query = parse_qs(url.query)
             race_id = query.get("race_id", ["default"])[0]
 
@@ -112,7 +115,7 @@ class RaceHandler(SimpleHTTPRequestHandler):
             return
 
         # 2. 내 지갑 포인트 조회
-        elif url.path == "/api/wallet":
+        elif path == "/api/wallet":
             query = parse_qs(url.query)
             user_id = query.get("user_id", [""])[0]
             wallets = load_wallets()
@@ -126,7 +129,7 @@ class RaceHandler(SimpleHTTPRequestHandler):
             return
 
         # 3. 서버 활성 레이스 상태 조회 (활성 레이스 파일 직접 조회)
-        elif url.path == "/api/room":
+        elif path == "/api/room":
             query = parse_qs(url.query)
             race_id = query.get("race_id", ["default"])[0]
             now = int(time.time() * 1000)
@@ -177,7 +180,7 @@ class RaceHandler(SimpleHTTPRequestHandler):
             return
 
         # 4. 부자 랭킹 TOP 10 조회
-        elif url.path == "/api/ranking":
+        elif path == "/api/ranking":
             wallets = load_wallets()
             sorted_wallets = sorted(wallets.values(), key=lambda x: x.get("points", 0), reverse=True)[:10]
             ranking = []
@@ -200,13 +203,16 @@ class RaceHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         url = urlparse(self.path)
+        path = url.path
+        if path.startswith("/race"):
+            path = path[5:]  # strip /race prefix
 
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length).decode("utf-8")
         payload = json.loads(body) if body else {}
 
         # 4. 실시간 응원 이모지 전송 (인스타 라이브)
-        if url.path == "/api/reaction":
+        if path == "/api/reaction":
             race_id = str(payload.get("race_id", "default"))
             emoji = payload.get("emoji", "🔥")
             user_name = payload.get("user_name", "팀원")
@@ -223,7 +229,7 @@ class RaceHandler(SimpleHTTPRequestHandler):
             return
 
         # 5. 시트 내 실시간 배팅 처리
-        elif url.path == "/api/bet":
+        elif path == "/api/bet":
             race_id = str(payload.get("race_id", "default"))
             user_id = str(payload.get("user_id", ""))
             user_name = payload.get("user_name", "익명")
@@ -307,7 +313,7 @@ class RaceHandler(SimpleHTTPRequestHandler):
             return
 
         # 6. 구걸(탕비실 분리수거 알바) 처리
-        elif url.path == "/api/beg":
+        elif path == "/api/beg":
             user_id = str(payload.get("user_id", ""))
             user_name = payload.get("user_name", "익명")
             if not user_id:

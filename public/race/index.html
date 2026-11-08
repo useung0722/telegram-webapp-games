@@ -528,6 +528,9 @@
   </div>
 
   <script>
+    // 현재 서비스 서빙 경로에 따라 API Base Prefix 결정 (/race 하위에서 호스팅될 경우 대응)
+    const API_BASE = window.location.pathname.startsWith('/race') ? '/race' : '';
+
     // 텔레그램 WebApp SDK 초기화 및 사용자 계정 정확한 식별
     let tgUser = null;
     if (window.Telegram && window.Telegram.WebApp) {
@@ -567,7 +570,7 @@
     let myBet = null;
     function fetchWallet() {
       if (!currentUserId) return;
-      fetch(`/api/wallet?user_id=${currentUserId}`)
+      fetch(`${API_BASE}/api/wallet?user_id=${currentUserId}`)
         .then(r => r.json())
         .then(w => {
           if (w && typeof w.points === 'number') {
@@ -684,7 +687,7 @@
     let syncedWithServer = false;
 
     function syncWithServerRoom() {
-      fetch(`/api/room?race_id=${raceId}`)
+      fetch(`${API_BASE}/api/room?race_id=${raceId}`)
         .then(r => r.json())
         .then(room => {
           if (!room) return;
@@ -752,7 +755,7 @@
 
     function sendReaction(emoji) {
       spawnFloatingEmoji(emoji);
-      fetch('/api/reaction', {
+      fetch(`${API_BASE}/api/reaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ race_id: raceId, emoji, user_name: currentUserName })
@@ -770,7 +773,7 @@
         return;
       }
 
-      fetch('/api/bet', {
+      fetch(`${API_BASE}/api/bet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -799,7 +802,7 @@
     }
 
     // SSE 구독
-    const evtSource = new EventSource(`/api/events?race_id=${raceId}`);
+    const evtSource = new EventSource(`${API_BASE}/api/events?race_id=${raceId}`);
     evtSource.addEventListener('reaction', e => {
       try {
         const d = JSON.parse(e.data);
@@ -1172,7 +1175,7 @@
         alert('사용자 정보를 확인할 수 없습니다.');
         return;
       }
-      fetch('/api/beg', {
+      fetch(`${API_BASE}/api/beg', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1201,7 +1204,7 @@
       body.innerHTML = '불러오는 중...';
       modal.style.display = 'block';
 
-      fetch('/api/ranking')
+      fetch(`${API_BASE}/api/ranking`)
         .then(r => r.json())
         .then(list => {
           if (!list || list.length === 0) {
