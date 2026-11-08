@@ -345,9 +345,9 @@ function getRaceBettingText(race) {
 }
 
 function getRaceBettingKeyboard(race) {
-  // 📊 사내 위장 엑셀 텔레그램 Mini App Direct Link 생성
+  // 📊 사내 위장 엑셀 텔레그램 Mini App Direct Link 생성 (생성 타임스탬프 포함)
   const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
-  const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
+  const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}_${race.createdAt}`;
   const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
 
   return Markup.inlineKeyboard([
@@ -503,7 +503,7 @@ function initHorseRace(bot, helpers) {
 
     const threadId = race.threadId || getThreadId(ctx) || GAME_THREAD_ID;
     const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
-    const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
+    const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}_${race.createdAt}`;
     const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
 
     // 텔레그램 채팅창에 지저분한 아스키 트랙 도배 중계 대신, 깔끔한 미니앱 관전 안내 1줄만 전송
@@ -631,8 +631,20 @@ function initHorseRace(bot, helpers) {
           try {
             const resExtra = { parse_mode: 'Markdown', ...getGameActionButtons() };
             if (threadId) resExtra.message_thread_id = threadId;
-            await bot.telegram.sendMessage(chatId, resultText, resExtra);
-          } catch (e) {}
+
+            // 기존 공지 메시지가 있으면 깔끔하게 수정(edit)하여 새 메시지 도배 방지
+            if (race.messageId) {
+              await bot.telegram.editMessageText(chatId, race.messageId, null, resultText, resExtra);
+            } else {
+              await bot.telegram.sendMessage(chatId, resultText, resExtra);
+            }
+          } catch (e) {
+            try {
+              const resExtra = { parse_mode: 'Markdown', ...getGameActionButtons() };
+              if (threadId) resExtra.message_thread_id = threadId;
+              await bot.telegram.sendMessage(chatId, resultText, resExtra);
+            } catch (err) {}
+          }
           delete races[chatId];
           saveActiveRaces();
         }, 1200);

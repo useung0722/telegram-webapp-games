@@ -176,6 +176,26 @@ class RaceHandler(SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
 
+        # 4. 부자 랭킹 TOP 10 조회
+        elif url.path == "/api/ranking":
+            wallets = load_wallets()
+            sorted_wallets = sorted(wallets.values(), key=lambda x: x.get("points", 0), reverse=True)[:10]
+            ranking = []
+            for idx, item in enumerate(sorted_wallets):
+                ranking.append({
+                    "rank": idx + 1,
+                    "name": item.get("name", "익명"),
+                    "points": item.get("points", 0),
+                    "activeTitle": item.get("activeTitle", "")
+                })
+            data = json.dumps(ranking, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         super().do_GET()
 
     def do_POST(self):
@@ -284,6 +304,57 @@ class RaceHandler(SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps({"success": True, "remain_points": w["points"]}).encode("utf-8"))
+            return
+
+        # 6. 구걸(탕비실 분리수거 알바) 처리
+        elif url.path == "/api/beg":
+            user_id = str(payload.get("user_id", ""))
+            user_name = payload.get("user_name", "익명")
+            if not user_id:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": "사용자 정보가 없습니다."}).encode("utf-8"))
+                return
+
+            wallets = load_wallets()
+            w = wallets.get(user_id, {"points": 10000, "name": user_name})
+            now = int(time.time() * 1000)
+
+            if w.get("points", 0) >= 5000:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                msg = f"🙄 아직 {w.get('points', 0):,} P나 있으면서 구걸을 하시게요? 5,000 P 미만일 때만 가능합니다!"
+                self.wfile.write(json.dumps({"success": False, "message": msg}).encode("utf-8"))
+                return
+
+            last_beg = w.get("lastBeg", 0)
+            if now - last_beg < 10000:
+                remain_sec = int(round((10000 - (now - last_beg)) / 1000))
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                msg = f"⏳ 탕비실 청소 알바 쿨타임 중입니다! ({remain_sec}초 후 가능)"
+                self.wfile.write(json.dumps({"success": False, "message": msg}).encode("utf-8"))
+                return
+
+            w["points"] = w.get("points", 0) + 5000
+            w["lastBeg"] = now
+            w["begCount"] = w.get("begCount", 0) + 1
+            w["name"] = user_name
+            wallets[user_id] = w
+            save_wallets(wallets)
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            msg = f"🧹 탕비실 분리수거 알바 완료! +5,000 P 충전되었습니다.\n현재 잔액: {w['points']:,} P"
+            self.wfile.write(json.dumps({"success": True, "message": msg, "remain_points": w["points"]}).encode("utf-8"))
             return
 
         self.send_response(404)

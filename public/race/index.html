@@ -349,11 +349,42 @@
       background: #107c41;
       color: white;
       border: none;
-      padding: 5px 16px;
+      padding: 6px 14px;
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      float: right;
+      border-radius: 3px;
+    }
+    .msgbox-btn-secondary {
+      background: #f3f2f1;
+      color: #323130;
+      border: 1px solid #d2d0ce;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .btn-beg {
+      background: #fff4ce;
+      color: #795e00;
+      border: 1px solid #fed966;
+      padding: 2px 7px;
+      font-size: 10px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .btn-beg:active {
+      background: #fed966;
+    }
+    .modal-btn-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -409,7 +440,10 @@
     <div class="betting-control-bar" id="bettingBar">
       <div class="bet-header-row">
         <span>💼 <strong>부서별 지분 투자 (배팅)</strong></span>
-        <span>보유 잔액: <span class="user-point-badge" id="userPointsDisplay">0 P</span></span>
+        <span>
+          보유 잔액: <span class="user-point-badge" id="userPointsDisplay">0 P</span>
+          <button class="btn-beg" onclick="begPoints()" title="잔액 5,000P 미만 시 5,000P 충전">🧹 알바</button>
+        </span>
       </div>
 
       <!-- 3마리 배팅 카드 -->
@@ -465,40 +499,74 @@
   <!-- 8. 결과 팝업 -->
   <div class="excel-msgbox" id="resultModal">
     <div class="msgbox-header">
-      <span>ℹ️</span>
-      <span>Microsoft Excel - 하향 분석 완료</span>
+      <span>🏆</span>
+      <span>Microsoft Excel - 제 <span id="resRaceNo">1</span>회 경기 최종 순위 & 정산</span>
     </div>
     <div class="msgbox-body" id="modalText">
       집계가 성공적으로 완료되었습니다.
     </div>
-    <button class="msgbox-btn" onclick="closeModal()">확인 (Enter)</button>
+    <div class="modal-btn-row">
+      <button class="msgbox-btn-secondary" onclick="begPoints()">🧹 탕비실 알바(구걸)</button>
+      <button class="msgbox-btn-secondary" onclick="showRankingModal()">🏆 부자 랭킹</button>
+      <button class="msgbox-btn" onclick="startNextRace()">🏇 다음 경기</button>
+      <button class="msgbox-btn-secondary" onclick="closeModal()">닫기</button>
+    </div>
+  </div>
+
+  <!-- 9. 부자 랭킹 팝업 -->
+  <div class="excel-msgbox" id="rankingModal">
+    <div class="msgbox-header">
+      <span>🏆</span>
+      <span>사내 부자 랭킹 TOP 10</span>
+    </div>
+    <div class="msgbox-body" id="rankingModalText" style="max-height: 240px; overflow-y: auto;">
+      불러오는 중...
+    </div>
+    <div class="modal-btn-row">
+      <button class="msgbox-btn" onclick="closeRankingModal()">확인</button>
+    </div>
   </div>
 
   <script>
-    // 텔레그램 WebApp SDK 초기화
+    // 텔레그램 WebApp SDK 초기화 및 사용자 계정 정확한 식별
     let tgUser = null;
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
       tgUser = (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || null;
-    }
 
-    let currentUserId = (tgUser && tgUser.id) ? String(tgUser.id) : null;
-    let currentUserName = (tgUser && (tgUser.first_name || tgUser.username)) ? (tgUser.first_name || tgUser.username) : '익명';
-
-    if (!currentUserId) {
-      currentUserId = localStorage.getItem('race_user_id');
-      if (!currentUserId) {
-        currentUserId = '1204945384'; // 기본 매핑
-        localStorage.setItem('race_user_id', currentUserId);
+      // initData raw 파싱 백업 (initDataUnsafe가 아직 비어있을 경우 대응)
+      if (!tgUser && window.Telegram.WebApp.initData) {
+        try {
+          const q = new URLSearchParams(window.Telegram.WebApp.initData);
+          const uStr = q.get('user');
+          if (uStr) tgUser = JSON.parse(uStr);
+        } catch (e) {}
       }
     }
-    if (currentUserName === '익명') {
-      currentUserName = localStorage.getItem('race_user_name') || '우성 이';
+
+    // URL 파라미터 백업 조회
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentUserId = (tgUser && tgUser.id) ? String(tgUser.id) : (urlParams.get('user_id') || null);
+    let currentUserName = (tgUser && (tgUser.first_name || tgUser.username)) 
+      ? (tgUser.first_name || tgUser.username) 
+      : (urlParams.get('user_name') || '익명');
+
+    if (tgUser && tgUser.id) {
+      localStorage.setItem('race_user_id', String(tgUser.id));
+      localStorage.setItem('race_user_name', currentUserName);
+    } else {
+      const cachedId = localStorage.getItem('race_user_id');
+      if (cachedId) {
+        currentUserId = cachedId;
+        currentUserName = localStorage.getItem('race_user_name') || '익명';
+      }
     }
 
     let userPoints = 0;
+    let myBet = null;
     function fetchWallet() {
+      if (!currentUserId) return;
       fetch(`/api/wallet?user_id=${currentUserId}`)
         .then(r => r.json())
         .then(w => {
@@ -516,7 +584,8 @@
     fetchWallet();
 
     function updatePointsDisplay() {
-      document.getElementById('userPointsDisplay').textContent = `${userPoints.toLocaleString()} P`;
+      const nameTag = currentUserName && currentUserName !== '익명' ? `(${currentUserName}) ` : '';
+      document.getElementById('userPointsDisplay').textContent = `${nameTag}${userPoints.toLocaleString()} P`;
     }
 
     function mulberry32(a) {
@@ -544,9 +613,10 @@
     ];
 
     // 파라미터 파싱
-    const urlParams = new URLSearchParams(window.location.search);
     let raceId = urlParams.get('id') || 'latest';
     let seedVal = 123456;
+    let horseIndices = null;
+    let raceCreatedAt = null;
 
     let tgParam = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe)
       ? window.Telegram.WebApp.initDataUnsafe.start_param
@@ -556,6 +626,12 @@
       const parts = tgParam.split('_');
       if (parts.length >= 1) raceId = parts[0];
       if (parts.length >= 2) seedVal = parseInt(parts[1], 10) || 123456;
+      if (parts.length >= 3) {
+        horseIndices = parts[2].split('-').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+      }
+      if (parts.length >= 4) {
+        raceCreatedAt = parseInt(parts[3], 10) || null;
+      }
     }
 
     let rnd = mulberry32(seedVal);
@@ -563,13 +639,30 @@
     let timeline = [];
     let TOTAL_DURATION = 15;
     let winnerRacer = null;
+    let finalPositions = [0, 0, 0];
 
-    // 기본 출전마 (서버 응답 전 임시)
-    racers = [
-      JSON.parse(JSON.stringify(RACER_POOL[1])), // 경주마
-      JSON.parse(JSON.stringify(RACER_POOL[5])), // 돼지
-      JSON.parse(JSON.stringify(RACER_POOL[11])) // 치와와
-    ];
+    // 파라미터 기반 출전마 설정 (링크에 전달된 동물 3마리 우선 반영)
+    if (horseIndices && horseIndices.length === 3) {
+      racers = horseIndices.map((idx, i) => {
+        const poolItem = RACER_POOL[idx] || RACER_POOL[i];
+        return {
+          id: i + 1,
+          name: poolItem.name,
+          emoji: poolItem.emoji,
+          title: poolItem.title,
+          odds: 3.0,
+          dept: poolItem.dept || '운영기획팀'
+        };
+      });
+    } else {
+      racers = [
+        JSON.parse(JSON.stringify(RACER_POOL[1])), // 경주마
+        JSON.parse(JSON.stringify(RACER_POOL[5])), // 돼지
+        JSON.parse(JSON.stringify(RACER_POOL[11])) // 치와와
+      ];
+    }
+
+    document.getElementById('seedBadge').textContent = `RACE #${raceId} | SEED: ${seedVal}`;
 
     function updateCardUI() {
       for (let i = 0; i < 3; i++) {
@@ -583,6 +676,13 @@
     updateCardUI();
 
     // 🚀 서버 active_races 및 룸 상태 100% 동기화
+    let remainingTime = 60;
+    if (raceCreatedAt) {
+      const elapsedSec = (Date.now() - raceCreatedAt) / 1000.0;
+      remainingTime = Math.max(0, Math.floor(60 - elapsedSec));
+    }
+    let syncedWithServer = false;
+
     function syncWithServerRoom() {
       fetch(`/api/room?race_id=${raceId}`)
         .then(r => r.json())
@@ -608,23 +708,34 @@
             document.getElementById('seedBadge').textContent = `RACE #${room.race_id} | SEED: ${seedVal}`;
           }
 
-          // 2. 물리 타임라인 재계산
+          // 물리 타임라인 재계산
           buildPhysicsTimeline();
 
-          // 3. 서버 남은시간 카운트다운 동기화
-          const remaining = Math.max(0, Math.floor(room.remaining_sec));
-          if (remaining > 0) {
-            const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
-            const ss = String(remaining % 60).padStart(2, '0');
-            document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
-          } else {
-            if (!isRacing) {
-              startRaceNow();
-            }
+          // 서버 활성 레이스 상태인 경우 남은시간 동기화
+          if (room.horses && room.horses.length > 0) {
+            remainingTime = Math.max(0, Math.floor(room.remaining_sec));
+            syncedWithServer = true;
           }
         })
         .catch(() => {});
     }
+
+    syncWithServerRoom();
+
+    // 클라이언트 자체 1초 타이머 (화면 시간이 자연스럽게 흐르도록 보장)
+    const countdownInterval = setInterval(() => {
+      remainingTime = Math.max(0, remainingTime - 1);
+      const mm = String(Math.floor(remainingTime / 60)).padStart(2, '0');
+      const ss = String(remainingTime % 60).padStart(2, '0');
+      document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
+
+      if (remainingTime <= 0) {
+        clearInterval(countdownInterval);
+        if (!isRacing) {
+          startRaceNow();
+        }
+      }
+    }, 1000);
 
     // ========================================================
     // 💖 실시간 인스타 라이브 이모지 & 배팅 SSE 연동
@@ -674,6 +785,7 @@
       .then(res => {
         if (res.success) {
           userPoints = res.remain_points;
+          myBet = { horseId, amount };
           updatePointsDisplay();
           spawnFloatingEmoji('💸');
           alert(`✅ ${horseId}번 말에 ${amount.toLocaleString()}P 투자 완료!`);
@@ -701,9 +813,8 @@
       } catch (err) {}
     });
 
-    // 1초마다 서버와 남은시간 및 동물 라인업 동기화
-    syncWithServerRoom();
-    const countdownInterval = setInterval(syncWithServerRoom, 1000);
+    // 5초마다 서버와 남은시간 및 동물 라인업 보조 동기화
+    setInterval(syncWithServerRoom, 5000);
 
     let isRacing = false;
     let raceStartTime = null;
@@ -785,6 +896,7 @@
         if (winnerIdx !== -1 && curTime > finishTime + 0.8) break;
       }
 
+      finalPositions = [profiles[0].pos, profiles[1].pos, profiles[2].pos];
       winnerRacer = racers[winnerIdx !== -1 ? winnerIdx : 0];
       TOTAL_DURATION = timeline[timeline.length - 1].t;
     }
@@ -850,21 +962,55 @@
         hasShownModal = true;
         setTimeout(() => {
           fetchWallet(); // 최신 지갑 잔고 다시 가져오기
-          const modal = document.getElementById('resultModal');
+          
+          // 최종 1, 2, 3위 순위 계산
+          const sortedRacers = racers.map((r, idx) => ({
+            ...r,
+            finishScore: finalPositions[idx] || 0
+          })).sort((a, b) => b.finishScore - a.finishScore);
+
+          const winner = sortedRacers[0];
+          document.getElementById('resRaceNo').textContent = raceId;
+
+          let betResultHtml = '';
+          if (myBet) {
+            if (myBet.horseId === winner.id) {
+              const prize = Math.floor(myBet.amount * winner.odds);
+              betResultHtml = `
+                <div style="background: #dff6dd; border: 1px solid #107c41; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                  🎉 <strong>배팅 적중 대성공!</strong><br>
+                  획득 상금: <span style="color:#107c41; font-weight:bold;">+${prize.toLocaleString()} P</span> (배당 ${winner.odds}x)
+                </div>`;
+            } else {
+              betResultHtml = `
+                <div style="background: #fde7e9; border: 1px solid #a80000; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                  💸 <strong>배팅 미적중</strong> (-${myBet.amount.toLocaleString()} P)<br>
+                  <span style="font-size:10px; color:#555;">(잔액이 부족하면 아래 [탕비실 알바] 버튼으로 충전하세요!)</span>
+                </div>`;
+            }
+          } else {
+            betResultHtml = `
+              <div style="background: #f3f2f1; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size: 10px; color: #605e5c;">
+                아무도 배팅하지 않은 평화로운 레이스였습니다.
+              </div>`;
+          }
+
           const modalText = document.getElementById('modalText');
           modalText.innerHTML = `
-            <strong>🏆 최종 최우수 달성 부서</strong><br><br>
-            <div style="font-size: 14px; font-weight: bold; color: #107c41; margin-bottom: 8px;">
-              ${winnerRacer.emoji} ${winnerRacer.title} (${winnerRacer.dept})
+            <div style="font-size: 11px; margin-bottom: 8px;">
+              🏁 <strong>최종 결승선 통과 순위</strong>:
+              <div style="margin-top: 4px; line-height: 1.6;">
+                🥇 <strong>1위</strong>: ${sortedRacers[0].id}번 ${sortedRacers[0].emoji} ${sortedRacers[0].title} (${sortedRacers[0].dept}) <span style="color:#107c41; font-weight:bold;">[${sortedRacers[0].odds}x]</span><br>
+                🥈 <strong>2위</strong>: ${sortedRacers[1].id}번 ${sortedRacers[1].emoji} ${sortedRacers[1].title} (${sortedRacers[1].dept})<br>
+                🥉 <strong>3위</strong>: ${sortedRacers[2].id}번 ${sortedRacers[2].emoji} ${sortedRacers[2].title} (${sortedRacers[2].dept})
+              </div>
             </div>
-            <div style="font-size: 11px; color: #555; margin-bottom: 10px;">
-              하향 데이터 집계가 결승선까지 완벽하게 검증 및 정산되었습니다.
-            </div>
+            ${betResultHtml}
             <div style="background: #eef2f5; padding: 8px; border-radius: 4px; font-size: 11px;">
-              💰 <strong>정산 후 보유 잔액</strong>: <span style="color:#107c41; font-weight:bold;">${userPoints.toLocaleString()} P</span>
+              💰 <strong>현재 내 지갑 잔액</strong>: <span style="color:#107c41; font-weight:bold;" id="modalWalletBalance">${userPoints.toLocaleString()} P</span>
             </div>
           `;
-          modal.style.display = 'block';
+          document.getElementById('resultModal').style.display = 'block';
         }, 500);
       }
 
@@ -1015,6 +1161,78 @@
 
     function closeModal() {
       document.getElementById('resultModal').style.display = 'none';
+    }
+
+    function closeRankingModal() {
+      document.getElementById('rankingModal').style.display = 'none';
+    }
+
+    function begPoints() {
+      if (!currentUserId) {
+        alert('사용자 정보를 확인할 수 없습니다.');
+        return;
+      }
+      fetch('/api/beg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: String(currentUserId),
+          user_name: String(currentUserName)
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          userPoints = res.remain_points;
+          updatePointsDisplay();
+          const modalBal = document.getElementById('modalWalletBalance');
+          if (modalBal) modalBal.textContent = `${userPoints.toLocaleString()} P`;
+        }
+      })
+      .catch(err => {
+        alert('알바 요청 중 오류: ' + err.message);
+      });
+    }
+
+    function showRankingModal() {
+      const modal = document.getElementById('rankingModal');
+      const body = document.getElementById('rankingModalText');
+      body.innerHTML = '불러오는 중...';
+      modal.style.display = 'block';
+
+      fetch('/api/ranking')
+        .then(r => r.json())
+        .then(list => {
+          if (!list || list.length === 0) {
+            body.innerHTML = '등록된 랭킹 데이터가 없습니다.';
+            return;
+          }
+          let rows = list.map(item => {
+            let medal = `${item.rank}등`;
+            if (item.rank === 1) medal = '🥇 1등';
+            else if (item.rank === 2) medal = '🥈 2등';
+            else if (item.rank === 3) medal = '🥉 3등';
+            return `
+              <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f3f2f1;">
+                <span><strong>${medal}</strong> ${item.name}</span>
+                <span style="color:#107c41; font-weight:bold;">${item.points.toLocaleString()} P</span>
+              </div>`;
+          }).join('');
+          body.innerHTML = rows;
+        })
+        .catch(err => {
+          body.innerHTML = '랭킹 조회 실패: ' + err.message;
+        });
+    }
+
+    function startNextRace() {
+      closeModal();
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.close) {
+        window.Telegram.WebApp.close();
+      } else {
+        alert('텔레그램 채팅방으로 돌아갑니다.');
+      }
     }
   </script>
 </body>
