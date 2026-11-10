@@ -120,7 +120,9 @@ function recordRaceResult(winnerName, participantNames) {
   saveHorseStats();
 }
 
-// 🐾 개성 넘치는 동물 선수 명단 & 고유 달리기 특성
+const { getUserSessionCount, incrementUserSession } = require('./user-session');
+
+// 🐾 개성 넘치는 동물 선수 명단 & 고유 달리기 특성 (총 12종)
 const RACER_POOL = [
   {
     name: '치타',
@@ -129,7 +131,7 @@ const RACER_POOL = [
     trait: '선행도주',
     desc: '초반 4턴 폭발적 질주, 후반 체력 방전 위험',
     odds: 1.8,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (turn <= 4) {
         const step = Math.random() < 0.65 ? 2 : 3;
         const effect = (step === 3) ? '💥' : '💨';
@@ -154,7 +156,7 @@ const RACER_POOL = [
     trait: '맹수돌진',
     desc: '고른 속도로 달리다 가끔 포효하며 폭주',
     odds: 2.2,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (Math.random() < 0.08) {
         return { step: 3, effect: '🔥', msg: '어흥!! 맹수의 포효 돌진!' };
       }
@@ -169,7 +171,7 @@ const RACER_POOL = [
     trait: '안정균형',
     desc: '언제나 1~2칸씩 꾸준히 달리는 모범생',
     odds: 2.4,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       const step = Math.random() < 0.45 ? 2 : 1;
       return { step, effect: (step === 2 ? '💨' : '━'), msg: (step === 2 ? '안정적인 스퍼트!' : '페이스 유지') };
     }
@@ -181,7 +183,7 @@ const RACER_POOL = [
     trait: '낮잠복불복',
     desc: '엄청 빠르지만 40% 확률로 졸면서 땡땡이',
     odds: 2.8,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (Math.random() < 0.40) {
         return { step: 0, effect: '💤', msg: '잔디밭에서 쿨쿨 낮잠 중...' };
       }
@@ -196,7 +198,7 @@ const RACER_POOL = [
     trait: '후반추격',
     desc: '초반엔 탐색전, 4턴 이후 사냥꾼의 맹추격',
     odds: 3.2,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (turn <= 3) {
         return { step: 1, effect: '━', msg: '조용히 눈치 살피는 중' };
       } else {
@@ -212,15 +214,87 @@ const RACER_POOL = [
     }
   },
   {
+    name: '원숭이',
+    emoji: '🐒',
+    title: '바나나원숭',
+    trait: '주변방해공격',
+    desc: '22% 확률로 다른 동물에게 바나나 껍질 투척(-1칸 미끄러짐)!',
+    odds: 3.5,
+    calcStep: (turn, h, others) => {
+      if (Math.random() < 0.22 && others && others.length > 0) {
+        const victim = others[Math.floor(Math.random() * others.length)];
+        victim.progress = Math.max(0, victim.progress - 1);
+        victim.lastEffect = '🍌';
+        const step = Math.random() < 0.25 ? 2 : 1;
+        return {
+          step,
+          effect: '🍌',
+          msg: `🍌 얍! [${victim.title}]에게 바나나 껍질 투척! (${victim.title} 1칸 미끄러짐!)`
+        };
+      }
+      const step = Math.random() < 0.25 ? 2 : 1;
+      return { step, effect: (step === 2 ? '💨' : '━'), msg: '나무 타듯 가볍게 깡충깡충' };
+    }
+  },
+  {
+    name: '치와와',
+    emoji: '🐕',
+    title: '광견치와와',
+    trait: '부정출발망나니',
+    desc: '1턴 4칸 부정출발 질주, 후반엔 분노로 으르렁!',
+    odds: 3.8,
+    calcStep: (turn, h, others) => {
+      if (turn === 1) {
+        return {
+          step: 4,
+          effect: '🚨',
+          msg: '🚨 탕 소리도 안 났는데 냅다 튀어나가는 4칸 부정출발!!'
+        };
+      }
+      if (turn <= 4) {
+        const step = Math.random() < 0.50 ? 2 : 1;
+        return { step, effect: '💨', msg: '컹컹 짖으며 질주 중!' };
+      }
+      if (Math.random() < 0.35) {
+        return {
+          step: 0,
+          effect: '💢',
+          msg: '혼자 분에 못 이겨 제자리에서 바들바들 떨며 으르렁!'
+        };
+      }
+      const step = Math.random() < 0.30 ? 2 : 1;
+      return { step, effect: '━', msg: '작은 발로 뽈뽈뽈 이동' };
+    }
+  },
+  {
     name: '돼지',
     emoji: '🐖',
     title: '폭식돈돈',
     trait: '식탐뚝심',
     desc: '느릿하지만 지치지 않고 묵직하게 밀고감',
     odds: 4.5,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       const step = Math.random() < 0.35 ? 2 : 1;
       return { step, effect: (step === 2 ? '💨' : '━'), msg: '간식 생각하며 묵묵히 전진' };
+    }
+  },
+  {
+    name: '가재',
+    emoji: '🦞',
+    title: '유턴가재',
+    trait: '뒤걸음질역주행',
+    desc: '고속 질주하다가도 35% 확률로 뒷걸음질(-2칸)!',
+    odds: 5.5,
+    calcStep: (turn, h, others) => {
+      if (h.progress > 0 && Math.random() < 0.35) {
+        return {
+          step: -2,
+          effect: '↩️',
+          msg: '🦞 이게 아닌가?! 당황해서 왔던 길로 격렬한 뒷걸음질! (-2칸)'
+        };
+      }
+      const step = Math.random() < 0.35 ? 3 : 2;
+      return { step, effect: '💨', msg: '집게발 딱딱거리며 전력 질주!' };
     }
   },
   {
@@ -230,7 +304,7 @@ const RACER_POOL = [
     trait: '막판뒤집기',
     desc: '초중반 기어감, 결승선 직전 4칸 초광속 역전기',
     odds: 6.5,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (turn <= 4) {
         const step = Math.random() < 0.45 ? 1 : 0;
         return { step, effect: (step === 0 ? '🐢' : '━'), msg: (step === 0 ? '제자리 걸음...' : '엉금엉금 기어가는 중') };
@@ -253,12 +327,26 @@ const RACER_POOL = [
     trait: '초고배당로또',
     desc: '기어가다 번개 맞으면 워프(5칸) 발동!',
     odds: 9.0,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (Math.random() < 0.11) {
         return { step: 5, effect: '⚡️', msg: '🌀 시공간 왜곡 워프 발동!! (+5칸 텔레포트)' };
       }
       const step = Math.random() < 0.30 ? 1 : 0;
       return { step, effect: '━', msg: (step === 0 ? '점액질 분비 중...' : '1mm씩 조심스럽게 전진') };
+    }
+  },
+  {
+    name: '새',
+    emoji: '🕊️',
+    title: '돌풍참새',
+    trait: '일도양단비행',
+    desc: '가만히 나뭇가지에 앉아있다가 낮은 확률로 결승선까지 직행 비행!',
+    odds: 12.0,
+    calcStep: (turn, h, others) => {
+      if (Math.random() < 0.015) {
+        return { step: 15, effect: '🌪️', msg: '🦅 파닥파닥 날개짓 한 방에 결승선으로 직행 비행!!' };
+      }
+      return { step: 0, effect: '🕊️', msg: '구구구... 깃털 다듬으며 멍때리는 중' };
     }
   }
 ];
@@ -434,14 +522,25 @@ function initHorseRace(bot, helpers) {
     const liveExtra = { parse_mode: 'Markdown' };
     if (threadId) liveExtra.message_thread_id = threadId;
 
-    // 🎯 부자 핸디캡(밸런스 조절) 계산
-    // 보유 포인트 1,000만 P 이상 부자가 배팅한 말 판별
+    // 🎯 카지노 세션 및 부자 핸디캡 계산
+    // 1) 보유 포인트 1,000만 P 이상 부자가 배팅한 말 판별
+    // 2) 세션 초반 유저(1~8판) vs 장기 플레이 유저(15판 이상) 판별
     const RICH_POINT_THRESHOLD = 10000000;
     const richTargetHorses = new Set();
+    const veteranTargetHorses = new Set();
+    const rookieTargetHorses = new Set();
+
     for (const [userId, bet] of race.bets.entries()) {
       const w = getWallet(userId, bet.name);
+      const sessionCount = incrementUserSession(userId); // 플레이 판수 증가 및 반환
+
       if (w && (w.points + (bet.amount || 0)) >= RICH_POINT_THRESHOLD) {
         richTargetHorses.add(bet.horseId);
+      }
+      if (sessionCount <= 8) {
+        rookieTargetHorses.add(bet.horseId);
+      } else if (sessionCount >= 16) {
+        veteranTargetHorses.add(bet.horseId);
       }
     }
 
@@ -467,32 +566,43 @@ function initHorseRace(bot, helpers) {
       for (const h of race.horses) {
         if (h.progress < FINISH_LINE) {
           let outcome = { step: 1, effect: '━', msg: '' };
+          const others = race.horses.filter(o => o.id !== h.id);
           if (h.calcStep) {
-            outcome = h.calcStep(turn, h);
+            outcome = h.calcStep(turn, h, others);
           } else {
             const s = Math.floor(Math.random() * 2) + 1;
             outcome = { step: s, effect: (s > 1 ? '💨' : '━'), msg: '' };
           }
 
-          // 🎲 부자 배팅마 자연스러운 미세 보정 (레이스 전체에서 단 1~2번만 살짝 페이스 조절)
-          if (richTargetHorses.has(h.id) && !h.nerfedOnce && turn >= 3 && Math.random() < 0.25) {
+          // 🎰 카지노 세션 다이내믹 보정
+          // 1) 초반 세션 유저(1~8판)가 건 말: 초반 순풍 버프 (+1칸 15% 보너스)
+          if (rookieTargetHorses.has(h.id) && !h.buffedOnce && turn >= 2 && turn <= 4 && Math.random() < 0.20) {
+            outcome.step += 1;
+            h.buffedOnce = true;
+          }
+
+          // 2) 부자 배팅마 & 16판 이상 장기 플레이 유저: 자연스러운 미세 페이스 조절 (레이스 전체 단 1번)
+          const needsNerf = richTargetHorses.has(h.id) || veteranTargetHorses.has(h.id);
+          if (needsNerf && !h.nerfedOnce && turn >= 3 && Math.random() < 0.28) {
             if (outcome.step > 1) {
               outcome.step -= 1;
               h.nerfedOnce = true;
             }
           }
 
-          h.progress = Math.min(FINISH_LINE, h.progress + outcome.step);
+          h.progress = Math.max(0, Math.min(FINISH_LINE, h.progress + outcome.step));
           h.lastEffect = outcome.effect || '';
 
-          if (outcome.msg && (outcome.step >= 3 || outcome.step === 0 || outcome.effect === '💦' || outcome.effect === '⚡️' || outcome.effect === '🚀')) {
+          if (outcome.msg && (outcome.step >= 3 || outcome.step <= 0 || outcome.effect === '💦' || outcome.effect === '⚡️' || outcome.effect === '🚀' || outcome.effect === '🍌' || outcome.effect === '↩️' || outcome.effect === '🚨')) {
             turnEvents.push(`${h.emoji} **[${h.title}]** ${outcome.msg}`);
           }
 
           if (h.progress >= FINISH_LINE && !h.finishScore) {
-            // 결승선 통과 시 사진 판독(초정밀 미세값)에서 부자 말이 동시 통과했을 경우 코끝 차이로 밀리게만 보정
-            const richPenalty = richTargetHorses.has(h.id) ? (Math.random() < 0.6 ? -0.05 : 0) : 0;
-            h.finishScore = (FINISH_LINE + outcome.step * 0.1) + Math.random() * 0.09 + richPenalty;
+            // 결승선 통과 시 사진 판독: 장기 플레이/부자 말은 동시 통과 시 코끝 차이로 밀리게 보정
+            const penalty = (richTargetHorses.has(h.id) || veteranTargetHorses.has(h.id))
+              ? (Math.random() < 0.65 ? -0.06 : 0)
+              : (rookieTargetHorses.has(h.id) ? 0.04 : 0);
+            h.finishScore = (FINISH_LINE + outcome.step * 0.1) + Math.random() * 0.09 + penalty;
           }
         } else {
           h.lastEffect = '';
