@@ -378,12 +378,11 @@ function initHorseRace(bot, helpers) {
             outcome = { step: s, effect: (s > 1 ? '💨' : '━'), msg: '' };
           }
 
-          // 🎲 부자 배팅마 자연스러운 디버프 (60% 확률로 1턴에 최대 1칸 미세 감속)
-          if (richTargetHorses.has(h.id) && Math.random() < 0.60) {
+          // 🎲 부자 배팅마 자연스러운 미세 보정 (레이스 전체에서 단 1~2번만 살짝 페이스 조절)
+          if (richTargetHorses.has(h.id) && !h.nerfedOnce && turn >= 3 && Math.random() < 0.25) {
             if (outcome.step > 1) {
               outcome.step -= 1;
-            } else if (outcome.step === 1 && Math.random() < 0.35) {
-              outcome.step = 0;
+              h.nerfedOnce = true;
             }
           }
 
@@ -395,7 +394,9 @@ function initHorseRace(bot, helpers) {
           }
 
           if (h.progress >= FINISH_LINE && !h.finishScore) {
-            h.finishScore = (FINISH_LINE + outcome.step * 0.1) + Math.random() * 0.09;
+            // 결승선 통과 시 사진 판독(초정밀 미세값)에서 부자 말이 동시 통과했을 경우 코끝 차이로 밀리게만 보정
+            const richPenalty = richTargetHorses.has(h.id) ? (Math.random() < 0.6 ? -0.05 : 0) : 0;
+            h.finishScore = (FINISH_LINE + outcome.step * 0.1) + Math.random() * 0.09 + richPenalty;
           }
         } else {
           h.lastEffect = '';
