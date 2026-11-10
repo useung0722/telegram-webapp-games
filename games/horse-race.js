@@ -6,7 +6,6 @@ const { Markup } = require('telegraf');
 // 🏇 대환장 동물 달리기 대회 (경마/배팅 모듈)
 // ==========================================
 const HORSE_STATS_FILE = path.join(__dirname, '..', 'horse_stats.json');
-const ACTIVE_RACES_FILE = path.join(__dirname, '..', 'active_races.json');
 let horseStats = {};
 try {
   if (fs.existsSync(HORSE_STATS_FILE)) {
@@ -22,6 +21,78 @@ function saveHorseStats() {
   } catch (e) {}
 }
 
+function formatKoreanNumber(val) {
+  if (val === undefined || val === null) return '0';
+  let isNegative = false;
+  let str = String(val).trim();
+  if (str.startsWith('-')) {
+    isNegative = true;
+    str = str.slice(1);
+  }
+
+  // 지수 표기법 (예: 6.75e+21) 처리: BigInt로 파싱 가능한 정수 문자열로 변환
+  if (/^[0-9.]+[eE][+-]?[0-9]+$/.test(str)) {
+    try {
+      const parts = str.split(/[eE]/);
+      let base = parts[0];
+      const exp = parseInt(parts[1], 10);
+      if (exp >= 0) {
+        const dotIdx = base.indexOf('.');
+        if (dotIdx >= 0) {
+          const decPlaces = base.length - dotIdx - 1;
+          const digits = base.replace('.', '');
+          if (exp >= decPlaces) {
+            str = digits + '0'.repeat(exp - decPlaces);
+          } else {
+            str = digits.slice(0, dotIdx + exp);
+          }
+        } else {
+          str = base + '0'.repeat(exp);
+        }
+      }
+    } catch (e) {}
+  }
+
+  try {
+    let bn = BigInt(str.split('.')[0]);
+    if (bn === 0n) return '0';
+    if (bn < 10000n) return (isNegative ? '-' : '') + bn.toLocaleString();
+
+    const units = [
+      { val: 10n ** 48n, name: '극' },
+      { val: 10n ** 44n, name: '재' },
+      { val: 10n ** 40n, name: '정' },
+      { val: 10n ** 36n, name: '간' },
+      { val: 10n ** 32n, name: '구' },
+      { val: 10n ** 28n, name: '양' },
+      { val: 10n ** 24n, name: '자' },
+      { val: 10n ** 20n, name: '해' },
+      { val: 10n ** 16n, name: '경' },
+      { val: 10n ** 12n, name: '조' },
+      { val: 10n ** 8n, name: '억' },
+      { val: 10n ** 4n, name: '만' }
+    ];
+
+    for (const u of units) {
+      if (bn >= u.val) {
+        const quotient = bn / u.val;
+        const remainder = bn % u.val;
+        const decimalDigit = Number((remainder * 10n) / u.val);
+        let res = '';
+        if (quotient < 100n && decimalDigit > 0) {
+          res = `${quotient.toLocaleString()}.${decimalDigit}${u.name}`;
+        } else {
+          res = `${quotient.toLocaleString()}${u.name}`;
+        }
+        return (isNegative ? '-' : '') + res;
+      }
+    }
+  } catch (e) {}
+
+  const num = Number(val);
+  return (isNegative ? '-' : '') + (isNaN(num) ? '0' : num.toLocaleString());
+}
+
 function getHorseWins(name) {
   return (horseStats[name] && horseStats[name].wins) || 0;
 }
@@ -31,10 +102,7 @@ function getHorseLosses(name) {
 }
 
 function getHorseCurrentOdds(racer) {
-  const losses = getHorseLosses(racer.name);
-  if (losses === 0) return racer.odds;
-  const calculated = racer.odds * Math.pow(2, losses);
-  return Math.round(calculated * 10) / 10;
+  return racer.odds;
 }
 
 function recordRaceResult(winnerName, participantNames) {
@@ -44,47 +112,44 @@ function recordRaceResult(winnerName, participantNames) {
     }
     if (name === winnerName) {
       horseStats[name].wins = (horseStats[name].wins || 0) + 1;
-      horseStats[name].consecutiveLosses = 0; // 우승 시 연패 초기화 (원점 복귀)
+      horseStats[name].consecutiveLosses = 0;
     } else {
-      horseStats[name].consecutiveLosses = (horseStats[name].consecutiveLosses || 0) + 1; // 패배 시 연패 누적 (*2배)
+      horseStats[name].consecutiveLosses = (horseStats[name].consecutiveLosses || 0) + 1;
     }
   }
   saveHorseStats();
+  recordDailyRace(winnerName, participantNames);
 }
 
-// 🐾 개성 넘치는 동물 선수 명단 & 고유 달리기 특성
+const { getUserSessionCount, incrementUserSession } = require('./user-session');
+const { recordDailyRace } = require('./daily-tracker');
+const { getAnimalModifier } = require('./auto-balancer');
+
+// 🐾 개성 넘치는 동물 선수 명단 & 고유 달리기 특성 (총 12종)
 const RACER_POOL = [
   {
     name: '치타',
     emoji: '🐆',
     title: '총알탄치타',
     trait: '선행도주',
-    desc: '초반 폭발적 질주, 후반 체력 방전 위험',
+    desc: '초반 4턴 폭발적 질주, 후반 체력 방전 위험',
     odds: 1.8,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (turn <= 4) {
-        const step = Math.random() < 0.75 ? 2 : 3;
+        const step = Math.random() < 0.65 ? 2 : 3;
         const effect = (step === 3) ? '💥' : '💨';
         const msg = (step === 3) ? '초반 폭풍 부스터 폭발!!' : '초반 질주!';
         return { step, effect, msg };
       } else {
-        if (Math.random() < 0.1) {
+        const r = Math.random();
+        if (r < 0.25) {
           return { step: 0, effect: '💦', msg: '혓바닥 내밀고 탈진...' };
         }
-        return { step: 1, effect: '━', msg: '지친 몸으로 터덜터덜' };
+        if (r < 0.80) {
+          return { step: 1, effect: '━', msg: '지친 몸으로 터덜터덜' };
+        }
+        return { step: 2, effect: '💨', msg: '마지막 남은 힘으로 질주!' };
       }
-    }
-  },
-  {
-    name: '경주마',
-    emoji: '🐎',
-    title: '야근탈출마',
-    trait: '안정균형',
-    desc: '언제나 1~2칸씩 꾸준히 달리는 모범생',
-    odds: 2.2,
-    calcStep: (turn, h) => {
-      const step = Math.random() < 0.5 ? 2 : 1;
-      return { step, effect: (step === 2 ? '💨' : '━'), msg: (step === 2 ? '안정적인 스퍼트!' : '페이스 유지') };
     }
   },
   {
@@ -93,13 +158,40 @@ const RACER_POOL = [
     title: '어흥맹호',
     trait: '맹수돌진',
     desc: '고른 속도로 달리다 가끔 포효하며 폭주',
-    odds: 2.5,
-    calcStep: (turn, h) => {
-      if (Math.random() < 0.28) {
+    odds: 2.2,
+    calcStep: (turn, h, others) => {
+      if (Math.random() < 0.08) {
         return { step: 3, effect: '🔥', msg: '어흥!! 맹수의 포효 돌진!' };
       }
-      const step = Math.random() < 0.5 ? 2 : 1;
+      const step = Math.random() < 0.35 ? 2 : 1;
       return { step, effect: (step === 2 ? '💨' : '━'), msg: '침착하게 추격' };
+    }
+  },
+  {
+    name: '경주마',
+    emoji: '🐎',
+    title: '야근탈출마',
+    trait: '안정균형',
+    desc: '언제나 1~2칸씩 꾸준히 달리는 모범생',
+    odds: 2.4,
+    calcStep: (turn, h, others) => {
+      const step = Math.random() < 0.45 ? 2 : 1;
+      return { step, effect: (step === 2 ? '💨' : '━'), msg: (step === 2 ? '안정적인 스퍼트!' : '페이스 유지') };
+    }
+  },
+  {
+    name: '토끼',
+    emoji: '🐇',
+    title: '도발토끼',
+    trait: '낮잠복불복',
+    desc: '엄청 빠르지만 40% 확률로 졸면서 땡땡이',
+    odds: 2.8,
+    calcStep: (turn, h, others) => {
+      if (Math.random() < 0.40) {
+        return { step: 0, effect: '💤', msg: '잔디밭에서 쿨쿨 낮잠 중...' };
+      }
+      const step = Math.random() < 0.25 ? 3 : 2;
+      return { step, effect: (step === 3 ? '✨' : '💨'), msg: '번개 뜀박질로 폴짝폴짝!' };
     }
   },
   {
@@ -109,28 +201,72 @@ const RACER_POOL = [
     trait: '후반추격',
     desc: '초반엔 탐색전, 4턴 이후 사냥꾼의 맹추격',
     odds: 3.2,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (turn <= 3) {
         return { step: 1, effect: '━', msg: '조용히 눈치 살피는 중' };
       } else {
-        const step = Math.random() < 0.6 ? 2 : 3;
-        return { step, effect: (step === 3 ? '🌪️' : '💨'), msg: '사냥 모드 발동!! 맹추격!' };
+        const r = Math.random();
+        if (r < 0.05) {
+          return { step: 3, effect: '🌪️', msg: '사냥 모드 발동!! 맹추격!' };
+        }
+        if (r < 0.55) {
+          return { step: 2, effect: '💨', msg: '스피드를 올리며 추격!' };
+        }
+        return { step: 1, effect: '━', msg: '추격 페이스 유지' };
       }
     }
   },
   {
-    name: '토끼',
-    emoji: '🐇',
-    title: '도발토끼',
-    trait: '낮잠복불복',
-    desc: '엄청 빠르지만 30% 확률로 졸면서 땡땡이',
-    odds: 3.8,
-    calcStep: (turn, h) => {
-      if (Math.random() < 0.3) {
-        return { step: 0, effect: '💤', msg: '잔디밭에서 쿨쿨 낮잠 중...' };
+    name: '원숭이',
+    emoji: '🐒',
+    title: '바나나원숭',
+    trait: '주변방해공격',
+    desc: '22% 확률로 다른 동물에게 바나나 껍질 투척(-1칸 미끄러짐)!',
+    odds: 3.5,
+    calcStep: (turn, h, others) => {
+      if (Math.random() < 0.22 && others && others.length > 0) {
+        const victim = others[Math.floor(Math.random() * others.length)];
+        victim.progress = Math.max(0, victim.progress - 1);
+        victim.lastEffect = '🍌';
+        const step = Math.random() < 0.25 ? 2 : 1;
+        return {
+          step,
+          effect: '🍌',
+          msg: `🍌 얍! [${victim.title}]에게 바나나 껍질 투척! (${victim.title} 1칸 미끄러짐!)`
+        };
       }
-      const step = Math.random() < 0.5 ? 2 : 3;
-      return { step, effect: (step === 3 ? '✨' : '💨'), msg: '번개 뜀박질로 폴짝폴짝!' };
+      const step = Math.random() < 0.25 ? 2 : 1;
+      return { step, effect: (step === 2 ? '💨' : '━'), msg: '나무 타듯 가볍게 깡충깡충' };
+    }
+  },
+  {
+    name: '치와와',
+    emoji: '🐕',
+    title: '광견치와와',
+    trait: '부정출발망나니',
+    desc: '1턴 4칸 부정출발 질주, 후반엔 분노로 으르렁!',
+    odds: 3.8,
+    calcStep: (turn, h, others) => {
+      if (turn === 1) {
+        return {
+          step: 4,
+          effect: '🚨',
+          msg: '🚨 탕 소리도 안 났는데 냅다 튀어나가는 4칸 부정출발!!'
+        };
+      }
+      if (turn <= 4) {
+        const step = Math.random() < 0.50 ? 2 : 1;
+        return { step, effect: '💨', msg: '컹컹 짖으며 질주 중!' };
+      }
+      if (Math.random() < 0.35) {
+        return {
+          step: 0,
+          effect: '💢',
+          msg: '혼자 분에 못 이겨 제자리에서 바들바들 떨며 으르렁!'
+        };
+      }
+      const step = Math.random() < 0.30 ? 2 : 1;
+      return { step, effect: '━', msg: '작은 발로 뽈뽈뽈 이동' };
     }
   },
   {
@@ -140,9 +276,28 @@ const RACER_POOL = [
     trait: '식탐뚝심',
     desc: '느릿하지만 지치지 않고 묵직하게 밀고감',
     odds: 4.5,
-    calcStep: (turn, h) => {
-      const step = Math.random() < 0.45 ? 2 : 1;
+    calcStep: (turn, h, others) => {
+      const step = Math.random() < 0.35 ? 2 : 1;
       return { step, effect: (step === 2 ? '💨' : '━'), msg: '간식 생각하며 묵묵히 전진' };
+    }
+  },
+  {
+    name: '가재',
+    emoji: '🦞',
+    title: '유턴가재',
+    trait: '뒤걸음질역주행',
+    desc: '고속 질주하다가도 35% 확률로 뒷걸음질(-2칸)!',
+    odds: 5.5,
+    calcStep: (turn, h, others) => {
+      if (h.progress > 0 && Math.random() < 0.35) {
+        return {
+          step: -2,
+          effect: '↩️',
+          msg: '🦞 이게 아닌가?! 당황해서 왔던 길로 격렬한 뒷걸음질! (-2칸)'
+        };
+      }
+      const step = Math.random() < 0.35 ? 3 : 2;
+      return { step, effect: '💨', msg: '집게발 딱딱거리며 전력 질주!' };
     }
   },
   {
@@ -152,16 +307,16 @@ const RACER_POOL = [
     trait: '막판뒤집기',
     desc: '초중반 기어감, 결승선 직전 4칸 초광속 역전기',
     odds: 6.5,
-    calcStep: (turn, h) => {
+    calcStep: (turn, h, others) => {
       if (turn <= 4) {
-        const step = Math.random() < 0.7 ? 1 : 0;
+        const step = Math.random() < 0.45 ? 1 : 0;
         return { step, effect: (step === 0 ? '🐢' : '━'), msg: (step === 0 ? '제자리 걸음...' : '엉금엉금 기어가는 중') };
       } else {
         const r = Math.random();
-        if (r < 0.3) {
+        if (r < 0.08) {
           return { step: 4, effect: '🚀', msg: '🔥 용궁 부스터 점화!! 4칸 대역전 질주!' };
         }
-        if (r < 0.6) {
+        if (r < 0.25) {
           return { step: 3, effect: '💥', msg: '기적의 스퍼트 발동!' };
         }
         return { step: 1, effect: '━', msg: '마지막까지 포기하지 않음' };
@@ -175,11 +330,11 @@ const RACER_POOL = [
     trait: '초고배당로또',
     desc: '기어가다 번개 맞으면 워프(5칸) 발동!',
     odds: 9.0,
-    calcStep: (turn, h) => {
-      if (Math.random() < 0.16) {
+    calcStep: (turn, h, others) => {
+      if (Math.random() < 0.11) {
         return { step: 5, effect: '⚡️', msg: '🌀 시공간 왜곡 워프 발동!! (+5칸 텔레포트)' };
       }
-      const step = Math.random() < 0.4 ? 1 : 0;
+      const step = Math.random() < 0.30 ? 1 : 0;
       return { step, effect: '━', msg: (step === 0 ? '점액질 분비 중...' : '1mm씩 조심스럽게 전진') };
     }
   },
@@ -188,85 +343,13 @@ const RACER_POOL = [
     emoji: '🕊️',
     title: '돌풍참새',
     trait: '일도양단비행',
-    desc: '가만히 나뭇가지에 앉아있다가 10% 확률로 결승선까지 다이렉트 비행!',
+    desc: '가만히 나뭇가지에 앉아있다가 낮은 확률로 결승선까지 직행 비행!',
     odds: 12.0,
     calcStep: (turn, h, others) => {
-      if (Math.random() < 0.10) {
+      if (Math.random() < 0.015) {
         return { step: 15, effect: '🌪️', msg: '🦅 파닥파닥 날개짓 한 방에 결승선으로 직행 비행!!' };
       }
       return { step: 0, effect: '🕊️', msg: '구구구... 깃털 다듬으며 멍때리는 중' };
-    }
-  },
-  {
-    name: '원숭이',
-    emoji: '🐒',
-    title: '바나나원숭',
-    trait: '주변방해공격',
-    desc: '35% 확률로 다른 동물에게 바나나 껍질/돌멩이를 던져 1칸 후퇴시킴!',
-    odds: 3.6,
-    calcStep: (turn, h, others) => {
-      if (Math.random() < 0.35 && others && others.length > 0) {
-        const victim = others[Math.floor(Math.random() * others.length)];
-        victim.progress = Math.max(0, victim.progress - 1);
-        victim.lastEffect = '🍌';
-        const step = Math.random() < 0.5 ? 2 : 1;
-        return {
-          step,
-          effect: '🍌',
-          msg: `🍌 얍! [${victim.title}]에게 바나나 껍질 투척! (${victim.title} 1칸 미끄러짐!)`
-        };
-      }
-      const step = Math.random() < 0.5 ? 2 : 1;
-      return { step, effect: (step === 2 ? '💨' : '━'), msg: '나무 타듯 가볍게 깡충깡충' };
-    }
-  },
-  {
-    name: '가재',
-    emoji: '🦞',
-    title: '유턴가재',
-    trait: '뒤걸음질역주행',
-    desc: '빠르게 튀어나가다가도 30% 확률로 왔던 길을 뒷걸음질(-2칸)침!',
-    odds: 5.5,
-    calcStep: (turn, h, others) => {
-      if (h.progress > 0 && Math.random() < 0.30) {
-        return {
-          step: -2,
-          effect: '↩️',
-          msg: '🦞 이게 아닌가?! 당황해서 왔던 길로 격렬한 뒷걸음질! (-2칸)'
-        };
-      }
-      const step = Math.random() < 0.4 ? 3 : 2;
-      return { step, effect: '💨', msg: '집게발 딱딱거리며 전력 질주!' };
-    }
-  },
-  {
-    name: '치와와',
-    emoji: '🐕',
-    title: '광견치와와',
-    trait: '부정출발망나니',
-    desc: '시작하자마자 총소리 무시하고 4칸 부정출발! 하지만 중반엔 으르렁대다 지침',
-    odds: 4.2,
-    calcStep: (turn, h, others) => {
-      if (turn === 1) {
-        return {
-          step: 4,
-          effect: '🚨',
-          msg: '🚨 탕 소리도 안 났는데 냅다 튀어나가는 4칸 부정출발!!'
-        };
-      }
-      if (turn <= 3) {
-        const step = Math.random() < 0.6 ? 2 : 1;
-        return { step, effect: '💨', msg: '컹컹 짖으며 질주 중!' };
-      }
-      // 중반 이후
-      if (Math.random() < 0.4) {
-        return {
-          step: 0,
-          effect: '💢',
-          msg: '혼자 분에 못 이겨 제자리에서 바들바들 떨며 으르렁!'
-        };
-      }
-      return { step: 1, effect: '━', msg: '작은 발로 뽈뽈뽈 이동' };
     }
   }
 ];
@@ -277,71 +360,40 @@ const FINISH_LINE = VERTICAL_TRACK_HEIGHT;
 const races = {};
 let raceCounter = 1;
 
-function saveActiveRaces() {
-  try {
-    const serialized = {};
-    for (const [chatId, race] of Object.entries(races)) {
-      serialized[chatId] = {
-        raceNo: race.raceNo,
-        seed: race.seed,
-        threadId: race.threadId,
-        state: race.state,
-        createdAt: race.createdAt,
-        canStartAt: race.canStartAt,
-        messageId: race.messageId,
-        horses: race.horses.map(h => ({
-          id: h.id,
-          name: h.name,
-          emoji: h.emoji,
-          title: h.title,
-          trait: h.trait,
-          desc: h.desc,
-          odds: h.odds,
-          progress: h.progress
-        })),
-        bets: Array.from(race.bets.entries())
-      };
-    }
-    fs.writeFileSync(ACTIVE_RACES_FILE, JSON.stringify(serialized, null, 2), 'utf8');
-  } catch (e) {}
-}
-
-function formatKstTime(timestamp) {
-  const date = new Date(timestamp);
-  // 한국 시간(KST, UTC+9) 계산
-  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
-  const kst = new Date(utc + (9 * 3600000));
-  const hours = String(kst.getHours()).padStart(2, '0');
-  const minutes = String(kst.getMinutes()).padStart(2, '0');
-  const seconds = String(kst.getSeconds()).padStart(2, '0');
-  return `${hours}시 ${minutes}분 ${seconds}초`;
-}
-
 function getRaceBettingText(race) {
   const horseList = race.horses.map((h, i) => {
-    const losses = getHorseLosses(h.name);
-    const streakBadge = losses > 0 ? ` 🔥 ${losses}연패(×${Math.pow(2, losses)}배)` : '';
-    return `${i + 1}번 ${h.emoji} **${h.title}** (${h.odds}x${streakBadge}) - _${h.desc}_`;
-  }).join('\n');
+    const wins = getHorseWins(h.name);
+    const winBadge = wins > 0 ? ` | 🏆 ${wins}승` : ' | 🏆 0승';
+    return `${i + 1}번 ${h.emoji} **${h.title}** (${h.name})\n` +
+           `   • 배당: **${h.odds}x** | 특성: **[${h.trait}]**${winBadge}\n` +
+           `   • _${h.desc}_`;
+  }).join('\n\n');
 
-  const startTimeStr = formatKstTime(race.canStartAt);
+  let betList = '아직 배팅이 없습니다.';
+  if (race.bets.size > 0) {
+    betList = Array.from(race.bets.values())
+      .map(b => `• **${b.name}**: ${b.horseId}번(${b.racerName})에 ${formatKoreanNumber(b.amount)} P`)
+      .join('\n');
+  }
 
-  return `🏇 **[제 ${race.raceNo}회 대환장 동물 달리기] 대기실 오픈**\n\n` +
-    `⏰ **경기 출발 예정 시각: ${startTimeStr}** (1분 후 자동 출발)\n\n` +
-    `📋 **[출전 동물 명단]**\n` +
-    `${horseList}\n\n` +
-    `👉 아래 **[📊 엑셀 시트 입장]** 버튼을 눌러 시트 안에서 원하는 동물에 배팅하고 실시간 응원해 주세요!`;
+  return `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기 대회] 배팅 오픈!**\n\n` +
+    `🏁 **출전 선수 명단**:\n${horseList}\n\n` +
+    `📊 **배팅 내역**:\n${betList}\n\n` +
+    `💬 **배팅 방법**: 버튼 클릭 또는 채팅창에 **\`1번 3000\`**, **\`2번 5천\`**, **\`3번 올인\`** 타이핑!\n` +
+    `👇 배팅 후 [🏁 경기 시작] 을 누르세요! (1분 뒤 자동 출발)\n` +
+    `⚠️ **주의**: 경주가 시작되면 달리는 화면이 가려지지 않도록 채팅이 자동 삭제됩니다.`;
 }
 
 function getRaceBettingKeyboard(race) {
-  // 📊 사내 위장 엑셀 텔레그램 Mini App Direct Link 생성
-  const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
-  const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
-  const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
-
-  return Markup.inlineKeyboard([
-    [Markup.button.url('📊 엑셀 시트 입장 (배팅 & 관전)', miniAppUrl)]
-  ]);
+  const horseButtons = race.horses.map((h, i) => {
+    return [
+      Markup.button.callback(`${h.emoji} ${i + 1}번 (+1천)`, `bet_${i + 1}_1000`),
+      Markup.button.callback(`${h.emoji} ${i + 1}번 (+5천)`, `bet_${i + 1}_5000`),
+      Markup.button.callback(`${h.emoji} ${i + 1}번 (올인)`, `bet_${i + 1}_all`)
+    ];
+  });
+  horseButtons.push([Markup.button.callback('🏁 경기 시작 (출발!)', 'start_race_now')]);
+  return Markup.inlineKeyboard(horseButtons);
 }
 
 // 🏁 세로형 트랙 렌더러
@@ -390,37 +442,6 @@ function initHorseRace(bot, helpers) {
     getGameActionButtons
   } = helpers;
 
-  // 🔄 봇 시작/재부팅 시 미완료된 배팅 환불 및 복구
-  try {
-    if (fs.existsSync(ACTIVE_RACES_FILE)) {
-      const saved = JSON.parse(fs.readFileSync(ACTIVE_RACES_FILE, 'utf8'));
-      let refundedCount = 0;
-      for (const [chatId, race] of Object.entries(saved)) {
-        if (race.bets && race.bets.length > 0) {
-          for (const [userId, bet] of race.bets) {
-            const w = getWallet(userId, bet.name);
-            w.points += bet.amount;
-            refundedCount++;
-          }
-          if (race.threadId) {
-            bot.telegram.sendMessage(
-              chatId,
-              `🔄 **[시스템 업데이트 안내]**\n봇 재부팅으로 인해 진행 중이던 제 ${race.raceNo}회 대기실 배팅 금액이 전액 안전하게 지갑으로 자동 환불되었습니다. 💰`,
-              { parse_mode: 'Markdown', message_thread_id: race.threadId }
-            ).catch(() => {});
-          }
-        }
-      }
-      if (refundedCount > 0) {
-        saveWallets();
-        console.log(`[HorseRace] 재부팅 전 미완료 배팅 ${refundedCount}건 전액 환불 완료.`);
-      }
-      fs.unlinkSync(ACTIVE_RACES_FILE);
-    }
-  } catch (e) {
-    console.error('[HorseRace] active_races 환불 처리 중 에러:', e);
-  }
-
   async function handleRace(ctx) {
     if (ctx.chat.type === 'private') {
       return ctx.reply('⚠️ 동물 달리기 대회는 단톡방(그룹)에서 함께 즐겨주세요!');
@@ -433,15 +454,15 @@ function initHorseRace(bot, helpers) {
 
     const selectedRacers = [...RACER_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
     const threadId = getThreadId(ctx) || GAME_THREAD_ID;
-    const seed = Math.floor(Math.random() * 900000) + 100000;
+
+    const autoStartAt = Date.now() + 60000;
 
     races[chatId] = {
       raceNo: raceCounter++,
-      seed,
       threadId,
       state: 'betting',
-      createdAt: Date.now(),
-      canStartAt: Date.now() + 60000,
+      autoStartAt,
+      autoStartTimer: null,
       horses: selectedRacers.map((r, idx) => ({
         id: idx + 1,
         name: r.name,
@@ -457,20 +478,15 @@ function initHorseRace(bot, helpers) {
       messageId: null
     };
 
-    // 1️⃣ 시트(서버 룸 데이터 active_races)부터 완벽하게 먼저 생성 & 저장 확정
-    saveActiveRaces();
-
-    // 2️⃣ 시트에 확정된 데이터 그대로 텔레그램 공지 및 입장 버튼 발송
     const sent = await ctx.reply(getRaceBettingText(races[chatId]), {
       parse_mode: 'Markdown',
       ...getRaceBettingKeyboard(races[chatId])
     });
 
     races[chatId].messageId = sent.message_id;
-    saveActiveRaces();
 
-    // 60초 후 자동으로 텔레그램 채팅방 애니메이션 및 결과 정산 진행
-    setTimeout(async () => {
+    // ⏳ 60초 후 자동 출발 타이머 설정
+    races[chatId].autoStartTimer = setTimeout(async () => {
       const currentRace = races[chatId];
       if (currentRace && currentRace.state === 'betting') {
         try {
@@ -484,55 +500,128 @@ function initHorseRace(bot, helpers) {
     const race = races[chatId];
     if (!race || race.state !== 'betting') return;
 
+    if (race.autoStartTimer) {
+      clearTimeout(race.autoStartTimer);
+      race.autoStartTimer = null;
+    }
+
     race.state = 'racing';
-    saveActiveRaces();
+
+    if (race.messageId) {
+      try {
+        await ctx.deleteMessage(race.messageId);
+      } catch (e) {}
+    }
+
+    const horseInfoLine = race.horses.map((h, i) => `${i + 1}번 ${h.emoji} ${h.title}`).join(' | ');
+    const initText = `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기] LIVE**\n` +
+      `📢 ${horseInfoLine}\n\n` +
+      `${renderVerticalTrack(race)}\n\n` +
+      `⚡ **실시간 전황**: 출발선에서 긴장감이 감돕니다...\n` +
+      `💬 **중계석**: 준비하시고... 땅! 💥\n` +
+      `🤫 *(경주 중 대화 임시 제한)*`;
 
     const threadId = race.threadId || getThreadId(ctx) || GAME_THREAD_ID;
-    const horseIndicesHyphen = race.horses.map(h => RACER_POOL.findIndex(p => p.name === h.name)).join('-');
-    const startParam = `${race.raceNo}_${race.seed || 101}_${horseIndicesHyphen}`;
-    const miniAppUrl = `https://t.me/oceanspybot/rece?startapp=${startParam}`;
-
-    // 텔레그램 채팅창에 지저분한 아스키 트랙 도배 중계 대신, 깔끔한 미니앱 관전 안내 1줄만 전송
-    const runningNotice = `🐎 **[제 ${race.raceNo}회 대환장 동물 달리기] 출발!!**\n\n` +
-      `엑셀 시트에서 실시간 60FPS 레이스가 진행 중입니다!\n` +
-      `아래 버튼을 눌러 시트에서 관전하세요! 👇`;
-
-    const liveExtra = {
-      parse_mode: 'Markdown',
-      ...Markup.inlineKeyboard([
-        [Markup.button.url('📊 엑셀 시트 실시간 관전하기', miniAppUrl)]
-      ])
-    };
+    const liveExtra = { parse_mode: 'Markdown' };
     if (threadId) liveExtra.message_thread_id = threadId;
 
-    try {
-      if (race.messageId) {
-        await bot.telegram.editMessageText(chatId, race.messageId, null, runningNotice, liveExtra);
-      } else {
-        const sent = await bot.telegram.sendMessage(chatId, runningNotice, liveExtra);
-        race.messageId = sent.message_id;
-      }
-    } catch (e) {}
+    // 🎯 카지노 세션 및 부자 핸디캡 계산
+    // 1) 보유 포인트 1,000만 P 이상 부자가 배팅한 말 판별
+    // 2) 세션 초반 유저(1~8판) vs 장기 플레이 유저(15판 이상) 판별
+    const RICH_POINT_THRESHOLD = 10000000;
+    const richTargetHorses = new Set();
+    const veteranTargetHorses = new Set();
+    const rookieTargetHorses = new Set();
 
-    // 물리 엔진과 동일한 시드 기반으로 15초(레이스 시간) 동안 대기 후 최종 결과 정산
+    for (const [userId, bet] of race.bets.entries()) {
+      const w = getWallet(userId, bet.name);
+      const sessionCount = incrementUserSession(userId); // 플레이 판수 증가 및 반환
+
+      if (w && (w.points + (bet.amount || 0)) >= RICH_POINT_THRESHOLD) {
+        richTargetHorses.add(bet.horseId);
+      }
+      if (sessionCount <= 8) {
+        rookieTargetHorses.add(bet.horseId);
+      } else if (sessionCount >= 16) {
+        veteranTargetHorses.add(bet.horseId);
+      }
+    }
+
+    const liveMsg = await bot.telegram.sendMessage(chatId, initText, liveExtra);
+    race.messageId = liveMsg.message_id;
+
     let turn = 0;
+    const commentary = [
+      '탕! 게이트 오픈! 각양각색 동물들이 출발합니다! 💥',
+      '초반 질주! 치타와 경주마가 선두를 다툽니다! 🔥',
+      '중반 구간 진입! 늑대와 맹호의 발걸음이 빨라집니다! 💨',
+      '어어?! 뒤처지던 거북이와 달팽이의 눈빛이 변합니다?! ⚡️',
+      '후반 대격돌! 엄청난 스피드로 선두가 뒤바뀝니다! 🌪️',
+      '기적의 막판 대역전 스퍼트!! 결승선이 코앞입니다!! 🚨',
+      '골인 직전!! 모든 동물들이 결승선을 향해 다이빙!! 🏁',
+      '골인!! 결승선 통과!! 🏆'
+    ];
+
     const interval = setInterval(async () => {
       turn++;
+      const turnEvents = [];
 
       for (const h of race.horses) {
         if (h.progress < FINISH_LINE) {
           let outcome = { step: 1, effect: '━', msg: '' };
-          const others = race.horses.filter(o => o.id !== h.id && o.progress < FINISH_LINE);
+          const others = race.horses.filter(o => o.id !== h.id);
           if (h.calcStep) {
             outcome = h.calcStep(turn, h, others);
           } else {
             const s = Math.floor(Math.random() * 2) + 1;
             outcome = { step: s, effect: (s > 1 ? '💨' : '━'), msg: '' };
           }
-          h.progress = Math.max(0, Math.min(FINISH_LINE, h.progress + outcome.step));
-          if (h.progress >= FINISH_LINE && !h.finishScore) {
-            h.finishScore = (FINISH_LINE + outcome.step * 0.1) + Math.random() * 0.09;
+
+          // 🎰 카지노 세션 다이내믹 보정
+          // 1) 초반 세션 유저(1~8판)가 건 말: 초반 순풍 버프 (+1칸 15% 보너스)
+          if (rookieTargetHorses.has(h.id) && !h.buffedOnce && turn >= 2 && turn <= 4 && Math.random() < 0.20) {
+            outcome.step += 1;
+            h.buffedOnce = true;
           }
+
+          // 2) 매일 07시 자동 밸런스 패치에 의한 일일 컨디션 가중치 적용
+          const mod = getAnimalModifier(h.name);
+          if (mod.stepBonusProb && !h.modBuffed && turn >= 2 && Math.random() < mod.stepBonusProb) {
+            outcome.step += 1;
+            h.modBuffed = true;
+          }
+          if (mod.nerfedProb && !h.modNerfed && turn >= 3 && Math.random() < mod.nerfedProb) {
+            if (outcome.step > 1) {
+              outcome.step -= 1;
+              h.modNerfed = true;
+            }
+          }
+
+          // 3) 부자 배팅마 & 16판 이상 장기 플레이 유저: 자연스러운 미세 페이스 조절 (레이스 전체 단 1번)
+          const needsNerf = richTargetHorses.has(h.id) || veteranTargetHorses.has(h.id);
+          if (needsNerf && !h.nerfedOnce && turn >= 3 && Math.random() < 0.28) {
+            if (outcome.step > 1) {
+              outcome.step -= 1;
+              h.nerfedOnce = true;
+            }
+          }
+
+          h.progress = Math.max(0, Math.min(FINISH_LINE, h.progress + outcome.step));
+          h.lastEffect = outcome.effect || '';
+
+          if (outcome.msg && (outcome.step >= 3 || outcome.step <= 0 || outcome.effect === '💦' || outcome.effect === '⚡️' || outcome.effect === '🚀' || outcome.effect === '🍌' || outcome.effect === '↩️' || outcome.effect === '🚨')) {
+            turnEvents.push(`${h.emoji} **[${h.title}]** ${outcome.msg}`);
+          }
+
+          if (h.progress >= FINISH_LINE && !h.finishScore) {
+            // 결승선 통과 시 사진 판독: 장기 플레이/부자 말은 동시 통과 시 코끝 차이로 밀리게 보정
+            const penalty = (richTargetHorses.has(h.id) || veteranTargetHorses.has(h.id))
+              ? (Math.random() < 0.65 ? -0.06 : 0)
+              : (rookieTargetHorses.has(h.id) ? 0.04 : 0);
+            h.finishScore = (FINISH_LINE + outcome.step * 0.1) + Math.random() * 0.09 + penalty;
+          }
+        } else {
+          h.lastEffect = '';
         }
       }
 
@@ -540,7 +629,27 @@ function initHorseRace(bot, helpers) {
       const anyFinished = finishedHorses.length > 0;
       const isPhotoFinish = finishedHorses.length > 1;
 
-      if (anyFinished || turn >= 10) {
+      const comment = anyFinished
+        ? (isPhotoFinish ? '🚨 동시 골인!! 심판진 정밀 사진 판독에 들어갑니다!! 📷🏁' : '와아아!! 대망의 1등이 결승선을 완전히 통과했습니다!! 🏁🥇')
+        : commentary[Math.min(turn - 1, commentary.length - 2)];
+
+      let eventLog = turnEvents.length > 0 ? turnEvents.join('\n') : '치열한 눈치 싸움과 팽팽한 레이스가 이어집니다!';
+      if (anyFinished) {
+        eventLog = '🏁 **선두 동물이 결승선을 돌파했습니다!!**';
+      }
+
+      const text = `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기] LIVE**\n` +
+        `📢 ${horseInfoLine}\n\n` +
+        `${renderVerticalTrack(race)}\n\n` +
+        `⚡ **실시간 전황**:\n${eventLog}\n\n` +
+        `💬 **중계석**: ${comment}\n` +
+        `🤫 *(경주 중 대화 임시 제한)*`;
+
+      try {
+        await bot.telegram.editMessageText(chatId, race.messageId, null, text, { parse_mode: 'Markdown' });
+      } catch (e) {}
+
+      if (anyFinished || turn >= 15) {
         clearInterval(interval);
 
         race.horses.sort((a, b) => {
@@ -568,11 +677,14 @@ function initHorseRace(bot, helpers) {
             if (profit > (w.maxProfit || 0)) w.maxProfit = profit;
             if (bet.isAllIn) w.allInWon = true;
 
-            winners.push(`🎉 **${bet.name}**: +${prize.toLocaleString()} P (배당 ${winner.odds}x)`);
+            winners.push(`🎉 **${bet.name}**: +${formatKoreanNumber(prize)} P (배당 ${winner.odds}x)`);
           } else {
-            losers.push(`💸 **${bet.name}**: -${bet.amount.toLocaleString()} P`);
-            if (w.points === 0) {
+            if (w.points <= 0) {
+              w.points = 100000;
               w.bankruptHit = true;
+              losers.push(`💸 **${bet.name}**: -${formatKoreanNumber(bet.amount)} P (💥 파산 구제금 +10만 P 자동 지급!)`);
+            } else {
+              losers.push(`💸 **${bet.name}**: -${formatKoreanNumber(bet.amount)} P`);
             }
           }
 
@@ -608,7 +720,7 @@ function initHorseRace(bot, helpers) {
           resultText += `\n━━━━━━━━━━━━━━━\n` + newlyUnlockedMsgs.join('\n') + `\n`;
         }
 
-        resultText += `━━━━━━━━━━━━━━━\n아래 버튼을 눌러 바로 다음 경기를 열거나 지갑/랭킹을 확인하세요!`;
+        resultText += `━━━━━━━━━━━━━━━\n🗣️ **대화 제한이 해제되었습니다!**\n아래 버튼을 눌러 바로 다음 경기를 열거나 지갑/랭킹을 확인하세요!`;
 
         setTimeout(async () => {
           try {
@@ -617,10 +729,9 @@ function initHorseRace(bot, helpers) {
             await bot.telegram.sendMessage(chatId, resultText, resExtra);
           } catch (e) {}
           delete races[chatId];
-          saveActiveRaces();
-        }, 1200);
+        }, 1500);
       }
-    }, 1500);
+    }, 2200);
   }
 
   function processBet(chatId, user, horseId, amount, isAllIn) {
@@ -646,7 +757,7 @@ function initHorseRace(bot, helpers) {
       return { success: false, reason: '배팅할 포인트가 없습니다! (/구걸)' };
     }
     if (w.points < amount) {
-      return { success: false, reason: `잔액이 부족합니다! (현재: ${w.points.toLocaleString()} P)` };
+      return { success: false, reason: `잔액이 부족합니다! (현재: ${formatKoreanNumber(w.points)} P)` };
     }
 
     const currentBet = race.bets.get(user.id);
@@ -668,7 +779,6 @@ function initHorseRace(bot, helpers) {
       });
     }
     saveWallets();
-    saveActiveRaces();
 
     return {
       success: true,
@@ -690,7 +800,7 @@ function initHorseRace(bot, helpers) {
       return ctx.answerCbQuery(res.reason, { show_alert: true });
     }
 
-    await ctx.answerCbQuery(`${res.racerDisplayName}에 ${res.amount.toLocaleString()} P 배팅 완료!`);
+    await ctx.answerCbQuery(`${res.racerDisplayName}에 ${formatKoreanNumber(res.amount)} P 배팅 완료!`);
 
     try {
       await ctx.editMessageText(getRaceBettingText(res.race), {
@@ -706,13 +816,9 @@ function initHorseRace(bot, helpers) {
     const race = races[chatId];
     if (!race || race.state !== 'betting') return false;
 
-    // 경주가 열린 토픽방(게임방)에서 올라온 텍스트 배팅만 처리
-    const threadId = getThreadId(ctx);
-    if (threadId && race.threadId && threadId !== race.threadId) return false;
-
     const trimmed = text.trim();
-    // 패턴 매칭: "1번 3000", "1 5000", "2번 올인", "3번 1만", "1번 5천", "/배팅 1 3000" 등
-    const match = trimmed.match(/^(?:\/배팅\s+|\/bet\s+)?([1-3])(?:번)?\s+([0-9만천kK,]+|올인|all)$/i);
+    // 패턴 매칭: "1번 3000", "1 5000", "2번 올인", "3번 1만", "1번 5천", "2번 1억", "3 1조", "1번 1해" 등
+    const match = trimmed.match(/^(?:\/배팅\s+|\/bet\s+)?([1-3])(?:번)?\s+([0-9만천억조경해자양구간정재극kK,.]+|올인|all)$/i);
     if (!match) return false;
 
     const horseId = parseInt(match[1], 10);
@@ -724,9 +830,31 @@ function initHorseRace(bot, helpers) {
     if (rawAmount === '올인' || rawAmount === 'all') {
       isAllIn = true;
     } else {
-      // 단위 변환: 만, 천, k 처리
+      // 단위 변환: 극, 재, 정, 간, 구, 양, 자, 해, 경, 조, 억, 만, 천, k 처리
       let numStr = rawAmount.replace(/,/g, '');
-      if (numStr.endsWith('만')) {
+      if (numStr.endsWith('극')) {
+        amount = Math.floor(parseFloat(numStr.replace('극', '')) * 1e48);
+      } else if (numStr.endsWith('재')) {
+        amount = Math.floor(parseFloat(numStr.replace('재', '')) * 1e44);
+      } else if (numStr.endsWith('정')) {
+        amount = Math.floor(parseFloat(numStr.replace('정', '')) * 1e40);
+      } else if (numStr.endsWith('간')) {
+        amount = Math.floor(parseFloat(numStr.replace('간', '')) * 1e36);
+      } else if (numStr.endsWith('구')) {
+        amount = Math.floor(parseFloat(numStr.replace('구', '')) * 1e32);
+      } else if (numStr.endsWith('양')) {
+        amount = Math.floor(parseFloat(numStr.replace('양', '')) * 1e28);
+      } else if (numStr.endsWith('자')) {
+        amount = Math.floor(parseFloat(numStr.replace('자', '')) * 1e24);
+      } else if (numStr.endsWith('해')) {
+        amount = Math.floor(parseFloat(numStr.replace('해', '')) * 1e20);
+      } else if (numStr.endsWith('경')) {
+        amount = Math.floor(parseFloat(numStr.replace('경', '')) * 1e16);
+      } else if (numStr.endsWith('조')) {
+        amount = Math.floor(parseFloat(numStr.replace('조', '')) * 1e12);
+      } else if (numStr.endsWith('억')) {
+        amount = Math.floor(parseFloat(numStr.replace('억', '')) * 1e8);
+      } else if (numStr.endsWith('만')) {
         amount = Math.floor(parseFloat(numStr.replace('만', '')) * 10000);
       } else if (numStr.endsWith('천') || numStr.endsWith('k')) {
         amount = Math.floor(parseFloat(numStr.replace(/[천k]/g, '')) * 1000);
@@ -773,48 +901,13 @@ function initHorseRace(bot, helpers) {
 
   // 🔘 경기 시작 액션
   bot.action('start_race_now', async (ctx) => {
-    const chatId = ctx.chat.id;
-    const race = races[chatId];
-    if (!race || race.state !== 'betting') {
-      return ctx.answerCbQuery('진행 중인 대기실이 없습니다.');
-    }
-
-    const now = Date.now();
-    const remainingSec = Math.ceil(((race.canStartAt || 0) - now) / 1000);
-    if (remainingSec > 0) {
-      return ctx.answerCbQuery(`⏳ 배팅 시간입니다! ${remainingSec}초 후에 출발할 수 있습니다.`, { show_alert: true });
-    }
-
-    await ctx.answerCbQuery('🏁 경기를 시작합니다!');
+    await ctx.answerCbQuery('경기를 시작합니다!');
     return runVerticalRaceAnimation(ctx.chat.id, ctx);
   });
-
-  function refundAndCleanupActiveRaces() {
-    let refundedCount = 0;
-    for (const [chatId, race] of Object.entries(races)) {
-      if (race.bets && race.bets.size > 0) {
-        for (const [userId, bet] of race.bets.entries()) {
-          const w = getWallet(userId, bet.name);
-          w.points += bet.amount;
-          refundedCount++;
-        }
-      }
-    }
-    if (refundedCount > 0) {
-      saveWallets();
-      console.log(`[HorseRace] 종료/중단 시점 미완료 배팅 ${refundedCount}건 지갑 환불 완료.`);
-    }
-    try {
-      if (fs.existsSync(ACTIVE_RACES_FILE)) {
-        fs.unlinkSync(ACTIVE_RACES_FILE);
-      }
-    } catch (e) {}
-  }
 
   return {
     handleRace,
     handleTextBet,
-    refundAndCleanupActiveRaces,
     races
   };
 }

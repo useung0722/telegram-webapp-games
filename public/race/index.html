@@ -206,8 +206,10 @@
       padding: 6px 10px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
       flex-shrink: 0;
+      height: 145px;
+      box-sizing: border-box;
       z-index: 40;
     }
     .bet-header-row {
@@ -236,12 +238,11 @@
       background: #ffffff;
       border: 1px solid #d2d0ce;
       border-radius: 4px;
-      padding: 5px 4px;
+      padding: 4px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 2px;
-      cursor: pointer;
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     .bet-card-title {
@@ -256,48 +257,116 @@
       font-size: 9px;
       color: #605e5c;
     }
-    .bet-quick-btns {
+    .bet-input-row {
       display: flex;
-      gap: 2px;
+      gap: 3px;
       margin-top: 3px;
       width: 100%;
     }
-    .btn-quick {
-      flex: 1;
-      background: #f3f2f1;
-      border: 1px solid #e1dfdd;
-      padding: 3px 0;
+    .bet-text-input {
+      width: 100%;
+      min-width: 0;
+      padding: 3px 4px;
+      font-size: 10px;
+      border: 1px solid #c8c6c4;
+      border-radius: 2px;
+      text-align: right;
+      outline: none;
+      font-family: Consolas, monospace;
+    }
+    .bet-text-input:focus {
+      border-color: #107c41;
+      box-shadow: 0 0 0 1px #107c41;
+    }
+    .btn-allin {
+      background: #fed966;
+      color: #795e00;
+      border: 1px solid #d2d0ce;
+      padding: 3px 6px;
       font-size: 9px;
       border-radius: 2px;
-      font-weight: 600;
+      font-weight: bold;
       cursor: pointer;
-      text-align: center;
+      white-space: nowrap;
     }
-    .btn-quick:active {
-      background: #107c41;
-      color: #fff;
+    .btn-allin:active {
+      background: #d83b01;
+      color: #ffffff;
     }
 
-    /* 인스타 라이브 응원 이모티콘 바 */
-    .reaction-bar {
+    /* 인앱 실시간 채팅 & 응원 통합 바 */
+    .chat-reaction-bar {
       display: flex;
       align-items: center;
-      justify-content: space-around;
+      gap: 5px;
       background: #ffffff;
       border: 1px solid #e1dfdd;
-      border-radius: 20px;
-      padding: 2px 8px;
+      border-radius: 4px;
+      padding: 3px 6px;
+    }
+    .chat-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 11px;
+      padding: 2px 4px;
+      background: transparent;
+    }
+    .btn-chat-send {
+      background: #107c41;
+      color: #ffffff;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .reaction-icons {
+      display: flex;
+      gap: 2px;
     }
     .reaction-btn {
       background: transparent;
       border: none;
-      font-size: 19px;
+      font-size: 16px;
       cursor: pointer;
-      padding: 2px 6px;
+      padding: 0 2px;
       transition: transform 0.1s;
     }
     .reaction-btn:active {
-      transform: scale(1.4);
+      transform: scale(1.3);
+    }
+
+    /* 캔버스 위 반투명 실시간 채팅 오버레이 */
+    .live-chat-overlay {
+      position: absolute;
+      left: 10px;
+      bottom: 12px;
+      width: calc(100% - 20px);
+      max-width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      pointer-events: none;
+      z-index: 60;
+    }
+    .live-chat-bubble {
+      background: rgba(0, 0, 0, 0.65);
+      color: #ffffff;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      backdrop-filter: blur(2px);
+      animation: fadeInSlide 0.25s ease-out;
+      display: inline-block;
+      width: fit-content;
+      max-width: 100%;
+      word-break: break-all;
+    }
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* 하단 상태바 */
@@ -349,11 +418,66 @@
       background: #107c41;
       color: white;
       border: none;
-      padding: 5px 16px;
+      padding: 6px 14px;
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      float: right;
+      border-radius: 3px;
+    }
+    .msgbox-btn-secondary {
+      background: #f3f2f1;
+      color: #323130;
+      border: 1px solid #d2d0ce;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .btn-beg {
+      background: #fff4ce;
+      color: #795e00;
+      border: 1px solid #fed966;
+      padding: 2px 7px;
+      font-size: 10px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .btn-beg:active {
+      background: #fed966;
+    }
+    .btn-title-badge {
+      background: #e1dfdd;
+      color: #323130;
+      border: 1px solid #c8c6c4;
+      padding: 2px 7px;
+      font-size: 10px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .btn-title-badge:active {
+      background: #c8c6c4;
+    }
+    .title-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+      border-bottom: 1px solid #f3f2f1;
+    }
+    .title-item-locked {
+      opacity: 0.55;
+    }
+    .modal-btn-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -403,55 +527,59 @@
       <canvas id="raceCanvas"></canvas>
       <!-- 인스타 라이브 이모지 부유 레이어 -->
       <div class="reaction-overlay" id="reactionOverlay"></div>
+      <!-- 실시간 라이브 채팅 오버레이 -->
+      <div class="live-chat-overlay" id="liveChatOverlay"></div>
     </div>
 
-    <!-- 6. 엑셀 시트 내 실시간 배팅 & 인스타 라이브 응원 연타 바 -->
+    <!-- 6. 엑셀 시트 내 실시간 배팅 & 인앱 라이브 채팅/응원 바 -->
     <div class="betting-control-bar" id="bettingBar">
       <div class="bet-header-row">
         <span>💼 <strong>부서별 지분 투자 (배팅)</strong></span>
-        <span>보유 잔액: <span class="user-point-badge" id="userPointsDisplay">0 P</span></span>
+        <span>
+          <button class="btn-title-badge" onclick="showTitlesModal()" id="userTitleBadge">🎖️ 칭호</button>
+          보유 잔액: <span class="user-point-badge" id="userPointsDisplay">0 P</span>
+          <button class="btn-beg" onclick="begPoints()" title="잔액 5,000P 미만 시 5,000P 충전">🧹 알바</button>
+        </span>
       </div>
 
-      <!-- 3마리 배팅 카드 -->
+      <!-- 3마리 배팅 카드 (금액 직접 입력창 + 올인 버튼) -->
       <div class="bet-cards-row" id="betCardsRow">
-        <div class="bet-card-btn">
+        <div class="bet-card-btn" id="betCard0">
           <div class="bet-card-title"><span id="cardEmoji0">🐎</span> <span id="cardTitle0">1번</span></div>
           <div class="bet-card-sub" id="cardOdds0">2.2x</div>
-          <div class="bet-quick-btns">
-            <button class="btn-quick" onclick="sendBet(1, 1000)">+1천</button>
-            <button class="btn-quick" onclick="sendBet(1, 5000)">+5천</button>
-            <button class="btn-quick" onclick="sendBet(1, 'all')">올인</button>
+          <div class="bet-input-row">
+            <input type="text" class="bet-text-input" id="betInput1" placeholder="금액 입력" inputmode="numeric" onkeydown="handleBetInputKeyDown(event, 1)">
+            <button class="btn-allin" onclick="sendBet(1, 'all')">올인</button>
           </div>
         </div>
-        <div class="bet-card-btn">
+        <div class="bet-card-btn" id="betCard1">
           <div class="bet-card-title"><span id="cardEmoji1">🐖</span> <span id="cardTitle1">2번</span></div>
           <div class="bet-card-sub" id="cardOdds1">3.5x</div>
-          <div class="bet-quick-btns">
-            <button class="btn-quick" onclick="sendBet(2, 1000)">+1천</button>
-            <button class="btn-quick" onclick="sendBet(2, 5000)">+5천</button>
-            <button class="btn-quick" onclick="sendBet(2, 'all')">올인</button>
+          <div class="bet-input-row">
+            <input type="text" class="bet-text-input" id="betInput2" placeholder="금액 입력" inputmode="numeric" onkeydown="handleBetInputKeyDown(event, 2)">
+            <button class="btn-allin" onclick="sendBet(2, 'all')">올인</button>
           </div>
         </div>
-        <div class="bet-card-btn">
+        <div class="bet-card-btn" id="betCard2">
           <div class="bet-card-title"><span id="cardEmoji2">🐕</span> <span id="cardTitle2">3번</span></div>
           <div class="bet-card-sub" id="cardOdds2">6.5x</div>
-          <div class="bet-quick-btns">
-            <button class="btn-quick" onclick="sendBet(3, 1000)">+1천</button>
-            <button class="btn-quick" onclick="sendBet(3, 5000)">+5천</button>
-            <button class="btn-quick" onclick="sendBet(3, 'all')">올인</button>
+          <div class="bet-input-row">
+            <input type="text" class="bet-text-input" id="betInput3" placeholder="금액 입력" inputmode="numeric" onkeydown="handleBetInputKeyDown(event, 3)">
+            <button class="btn-allin" onclick="sendBet(3, 'all')">올인</button>
           </div>
         </div>
       </div>
 
-      <!-- 실시간 인스타 라이브 응원 바 -->
-      <div class="reaction-bar">
-        <span style="font-size: 10px; color: #797775; font-weight: bold; margin-right: 4px;">실시간 응원:</span>
-        <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
-        <button class="reaction-btn" onclick="sendReaction('🚀')">🚀</button>
-        <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
-        <button class="reaction-btn" onclick="sendReaction('🎉')">🎉</button>
-        <button class="reaction-btn" onclick="sendReaction('💸')">💸</button>
-        <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+      <!-- 실시간 라이브 채팅 & 레인 연타 응원 바 -->
+      <div class="chat-reaction-bar" id="chatReactionBar">
+        <input type="text" class="chat-input" id="chatMsgInput" placeholder="응원 메시지 입력 후 Enter..." maxlength="40" onkeydown="handleChatKeyDown(event)">
+        <button class="btn-chat-send" onclick="sendChatMessage()">전송</button>
+        <div class="reaction-icons">
+          <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
+          <button class="reaction-btn" onclick="sendReaction('🚀')">🚀</button>
+          <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+          <button class="reaction-btn" onclick="sendReaction('💸')">💸</button>
+        </div>
       </div>
     </div>
 
@@ -465,41 +593,94 @@
   <!-- 8. 결과 팝업 -->
   <div class="excel-msgbox" id="resultModal">
     <div class="msgbox-header">
-      <span>ℹ️</span>
-      <span>Microsoft Excel - 하향 분석 완료</span>
+      <span>🏆</span>
+      <span>Microsoft Excel - 제 <span id="resRaceNo">1</span>회 경기 최종 순위 & 정산</span>
     </div>
     <div class="msgbox-body" id="modalText">
       집계가 성공적으로 완료되었습니다.
     </div>
-    <button class="msgbox-btn" onclick="closeModal()">확인 (Enter)</button>
+    <div class="modal-btn-row">
+      <button class="msgbox-btn-secondary" onclick="showTitlesModal()">🎖️ 내 칭호</button>
+      <button class="msgbox-btn-secondary" onclick="begPoints()">🧹 탕비실 알바(구걸)</button>
+      <button class="msgbox-btn-secondary" onclick="showRankingModal()">🏆 부자 랭킹</button>
+      <button class="msgbox-btn" onclick="startNextRace()">🏇 다음 경기</button>
+      <button class="msgbox-btn-secondary" onclick="closeModal()">닫기</button>
+    </div>
+  </div>
+
+  <!-- 9. 부자 랭킹 팝업 -->
+  <div class="excel-msgbox" id="rankingModal">
+    <div class="msgbox-header">
+      <span>🏆</span>
+      <span>사내 부자 랭킹 TOP 10</span>
+    </div>
+    <div class="msgbox-body" id="rankingModalText" style="max-height: 240px; overflow-y: auto;">
+      불러오는 중...
+    </div>
+    <div class="modal-btn-row">
+      <button class="msgbox-btn" onclick="closeRankingModal()">확인</button>
+    </div>
+  </div>
+
+  <!-- 10. 맞춤 칭호 도감 & 장착 팝업 -->
+  <div class="excel-msgbox" id="titlesModal">
+    <div class="msgbox-header">
+      <span>🎖️</span>
+      <span>내 칭호 도감 및 장착</span>
+    </div>
+    <div class="msgbox-body" id="titlesModalText" style="max-height: 260px; overflow-y: auto;">
+      불러오는 중...
+    </div>
+    <div class="modal-btn-row">
+      <button class="msgbox-btn-secondary" onclick="clearTitle()">칭호 해제</button>
+      <button class="msgbox-btn" onclick="closeTitlesModal()">닫기</button>
+    </div>
   </div>
 
   <script>
-    // 텔레그램 WebApp SDK 초기화
+    // 현재 서비스 서빙 경로에 따라 API Base Prefix 결정 (/race 하위에서 호스팅될 경우 대응)
+    const API_BASE = window.location.pathname.startsWith('/race') ? '/race' : '';
+
+    // 텔레그램 WebApp SDK 초기화 및 사용자 계정 정확한 식별
     let tgUser = null;
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
       tgUser = (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || null;
-    }
 
-    let currentUserId = (tgUser && tgUser.id) ? String(tgUser.id) : null;
-    let currentUserName = (tgUser && (tgUser.first_name || tgUser.username)) ? (tgUser.first_name || tgUser.username) : '익명';
-
-    if (!currentUserId) {
-      currentUserId = localStorage.getItem('race_user_id');
-      if (!currentUserId) {
-        currentUserId = '1204945384'; // 기본 매핑
-        localStorage.setItem('race_user_id', currentUserId);
+      // initData raw 파싱 백업 (initDataUnsafe가 아직 비어있을 경우 대응)
+      if (!tgUser && window.Telegram.WebApp.initData) {
+        try {
+          const q = new URLSearchParams(window.Telegram.WebApp.initData);
+          const uStr = q.get('user');
+          if (uStr) tgUser = JSON.parse(uStr);
+        } catch (e) {}
       }
     }
-    if (currentUserName === '익명') {
-      currentUserName = localStorage.getItem('race_user_name') || '우성 이';
+
+    // URL 파라미터 백업 조회
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentUserId = (tgUser && tgUser.id) ? String(tgUser.id) : (urlParams.get('user_id') || null);
+    let currentUserName = (tgUser && (tgUser.first_name || tgUser.username)) 
+      ? (tgUser.first_name || tgUser.username) 
+      : (urlParams.get('user_name') || '익명');
+
+    if (tgUser && tgUser.id) {
+      localStorage.setItem('race_user_id', String(tgUser.id));
+      localStorage.setItem('race_user_name', currentUserName);
+    } else {
+      const cachedId = localStorage.getItem('race_user_id');
+      if (cachedId) {
+        currentUserId = cachedId;
+        currentUserName = localStorage.getItem('race_user_name') || '익명';
+      }
     }
 
     let userPoints = 0;
+    let myBet = null;
     function fetchWallet() {
-      fetch(`/api/wallet?user_id=${currentUserId}`)
+      if (!currentUserId) return;
+      fetch(`${API_BASE}/api/wallet?user_id=${currentUserId}`)
         .then(r => r.json())
         .then(w => {
           if (w && typeof w.points === 'number') {
@@ -507,6 +688,10 @@
             if (w.name && w.name !== '익명') {
               currentUserName = w.name;
               localStorage.setItem('race_user_name', w.name);
+            }
+            if (w.activeTitle) {
+              const badge = document.getElementById('userTitleBadge');
+              if (badge) badge.textContent = `🎖️ ${w.activeTitle}`;
             }
             updatePointsDisplay();
           }
@@ -516,7 +701,8 @@
     fetchWallet();
 
     function updatePointsDisplay() {
-      document.getElementById('userPointsDisplay').textContent = `${userPoints.toLocaleString()} P`;
+      const nameTag = currentUserName && currentUserName !== '익명' ? `(${currentUserName}) ` : '';
+      document.getElementById('userPointsDisplay').textContent = `${nameTag}${userPoints.toLocaleString()} P`;
     }
 
     function mulberry32(a) {
@@ -544,9 +730,10 @@
     ];
 
     // 파라미터 파싱
-    const urlParams = new URLSearchParams(window.location.search);
     let raceId = urlParams.get('id') || 'latest';
     let seedVal = 123456;
+    let horseIndices = null;
+    let raceCreatedAt = null;
 
     let tgParam = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe)
       ? window.Telegram.WebApp.initDataUnsafe.start_param
@@ -556,6 +743,12 @@
       const parts = tgParam.split('_');
       if (parts.length >= 1) raceId = parts[0];
       if (parts.length >= 2) seedVal = parseInt(parts[1], 10) || 123456;
+      if (parts.length >= 3) {
+        horseIndices = parts[2].split('-').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+      }
+      if (parts.length >= 4) {
+        raceCreatedAt = parseInt(parts[3], 10) || null;
+      }
     }
 
     let rnd = mulberry32(seedVal);
@@ -563,13 +756,30 @@
     let timeline = [];
     let TOTAL_DURATION = 15;
     let winnerRacer = null;
+    let finalPositions = [0, 0, 0];
 
-    // 기본 출전마 (서버 응답 전 임시)
-    racers = [
-      JSON.parse(JSON.stringify(RACER_POOL[1])), // 경주마
-      JSON.parse(JSON.stringify(RACER_POOL[5])), // 돼지
-      JSON.parse(JSON.stringify(RACER_POOL[11])) // 치와와
-    ];
+    // 파라미터 기반 출전마 설정 (링크에 전달된 동물 3마리 우선 반영)
+    if (horseIndices && horseIndices.length === 3) {
+      racers = horseIndices.map((idx, i) => {
+        const poolItem = RACER_POOL[idx] || RACER_POOL[i];
+        return {
+          id: i + 1,
+          name: poolItem.name,
+          emoji: poolItem.emoji,
+          title: poolItem.title,
+          odds: 3.0,
+          dept: poolItem.dept || '운영기획팀'
+        };
+      });
+    } else {
+      racers = [
+        JSON.parse(JSON.stringify(RACER_POOL[1])), // 경주마
+        JSON.parse(JSON.stringify(RACER_POOL[5])), // 돼지
+        JSON.parse(JSON.stringify(RACER_POOL[11])) // 치와와
+      ];
+    }
+
+    document.getElementById('seedBadge').textContent = `RACE #${raceId} | SEED: ${seedVal}`;
 
     function updateCardUI() {
       for (let i = 0; i < 3; i++) {
@@ -583,8 +793,15 @@
     updateCardUI();
 
     // 🚀 서버 active_races 및 룸 상태 100% 동기화
+    let remainingTime = 60;
+    if (raceCreatedAt) {
+      const elapsedSec = (Date.now() - raceCreatedAt) / 1000.0;
+      remainingTime = Math.max(0, Math.floor(60 - elapsedSec));
+    }
+    let syncedWithServer = false;
+
     function syncWithServerRoom() {
-      fetch(`/api/room?race_id=${raceId}`)
+      fetch(`${API_BASE}/api/room?race_id=${raceId}`)
         .then(r => r.json())
         .then(room => {
           if (!room) return;
@@ -608,50 +825,156 @@
             document.getElementById('seedBadge').textContent = `RACE #${room.race_id} | SEED: ${seedVal}`;
           }
 
-          // 2. 물리 타임라인 재계산
+          // 물리 타임라인 재계산
           buildPhysicsTimeline();
 
-          // 3. 서버 남은시간 카운트다운 동기화
-          const remaining = Math.max(0, Math.floor(room.remaining_sec));
-          if (remaining > 0) {
-            const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
-            const ss = String(remaining % 60).padStart(2, '0');
-            document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
-          } else {
-            if (!isRacing) {
-              startRaceNow();
-            }
+          // 서버 활성 레이스 상태인 경우 남은시간 동기화
+          if (room.horses && room.horses.length > 0) {
+            remainingTime = Math.max(0, Math.floor(room.remaining_sec));
+            syncedWithServer = true;
           }
         })
         .catch(() => {});
     }
 
+    syncWithServerRoom();
+
+    // 클라이언트 자체 1초 타이머 (화면 시간이 자연스럽게 흐르도록 보장)
+    const countdownInterval = setInterval(() => {
+      remainingTime = Math.max(0, remainingTime - 1);
+      const mm = String(Math.floor(remainingTime / 60)).padStart(2, '0');
+      const ss = String(remainingTime % 60).padStart(2, '0');
+      document.getElementById('timerDisplay').textContent = `${mm}:${ss}`;
+
+      if (remainingTime <= 0) {
+        clearInterval(countdownInterval);
+        if (!isRacing) {
+          startRaceNow();
+        }
+      }
+    }, 1000);
+
     // ========================================================
-    // 💖 실시간 인스타 라이브 이모지 & 배팅 SSE 연동
+    // 💖 실시간 인스타 라이브 이모지 & 채팅 & 배팅 SSE 연동
     // ========================================================
     const reactionOverlay = document.getElementById('reactionOverlay');
-    function spawnFloatingEmoji(emoji) {
+    const liveChatOverlay = document.getElementById('liveChatOverlay');
+
+    function getLaneCenterX(horseId) {
+      const idx = (horseId >= 1 && horseId <= 3) ? (horseId - 1) : (myBet ? myBet.horseId - 1 : 1);
+      const laneW = (viewW - ROW_HEADER_W) / 3;
+      return ROW_HEADER_W + (idx + 0.5) * laneW;
+    }
+
+    function spawnFloatingEmoji(emoji, horseId) {
       const el = document.createElement('div');
       el.className = 'floating-reaction';
       el.textContent = emoji;
-      el.style.left = (Math.random() * 80 + 10) + 'px';
+      const targetX = getLaneCenterX(horseId);
+      const jitter = (Math.random() - 0.5) * 24;
+      el.style.left = Math.max(10, Math.min(viewW - 30, targetX + jitter - 12)) + 'px';
       reactionOverlay.appendChild(el);
       setTimeout(() => el.remove(), 2300);
     }
 
+    function addLiveChatMessage(user_name, text, active_title, horse_id) {
+      if (!liveChatOverlay) return;
+      const bubble = document.createElement('div');
+      bubble.className = 'live-chat-bubble';
+      const titleBadge = active_title ? `[${active_title}] ` : '';
+      const horseBadge = horse_id ? ` #${horse_id}번` : '';
+      bubble.innerHTML = `<strong>${titleBadge}${user_name}${horseBadge}</strong>: ${text}`;
+      liveChatOverlay.appendChild(bubble);
+
+      // 최대 4개 유지
+      while (liveChatOverlay.children.length > 4) {
+        liveChatOverlay.removeChild(liveChatOverlay.firstChild);
+      }
+      setTimeout(() => {
+        bubble.style.transition = 'opacity 0.4s';
+        bubble.style.opacity = '0';
+        setTimeout(() => bubble.remove(), 400);
+      }, 4500);
+    }
+
     function sendReaction(emoji) {
-      spawnFloatingEmoji(emoji);
-      fetch('/api/reaction', {
+      const targetHorse = myBet ? myBet.horseId : 0;
+      spawnFloatingEmoji(emoji, targetHorse);
+      fetch(`${API_BASE}/api/reaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ race_id: raceId, emoji, user_name: currentUserName })
+        body: JSON.stringify({
+          race_id: raceId,
+          emoji,
+          user_name: currentUserName,
+          horse_id: targetHorse
+        })
       }).catch(() => {});
     }
 
+    function sendChatMessage() {
+      const input = document.getElementById('chatMsgInput');
+      if (!input) return;
+      const text = (input.value || '').trim();
+      if (!text) return;
+      input.value = '';
+
+      const targetHorse = myBet ? myBet.horseId : 0;
+      const badge = document.getElementById('userTitleBadge');
+      const activeTitle = badge ? badge.textContent.replace('🎖️', '').trim() : '';
+
+      addLiveChatMessage(currentUserName, text, activeTitle, targetHorse);
+      spawnFloatingEmoji('💬', targetHorse);
+
+      fetch(`${API_BASE}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          race_id: raceId,
+          user_name: currentUserName,
+          active_title: activeTitle,
+          text,
+          horse_id: targetHorse
+        })
+      }).catch(() => {});
+    }
+
+    function handleChatKeyDown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    }
+
+    function handleBetInputKeyDown(e, horseId) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = document.getElementById(`betInput${horseId}`);
+        if (!input) return;
+        const val = input.value.trim();
+        if (!val) return;
+        sendBet(horseId, val);
+      }
+    }
+
     function sendBet(horseId, amountVal) {
-      let amount = (amountVal === 'all') ? userPoints : parseInt(amountVal, 10);
-      if (amount <= 0) {
-        alert('배팅할 포인트가 없습니다!');
+      let amount = 0;
+      if (amountVal === 'all') {
+        amount = userPoints;
+      } else {
+        // "1만", "5천" 등 단축어 지원 or 숫자 정규화
+        let str = String(amountVal).replace(/,/g, '').trim();
+        if (str.endsWith('만')) {
+          amount = parseFloat(str.replace('만', '')) * 10000;
+        } else if (str.endsWith('천')) {
+          amount = parseFloat(str.replace('천', '')) * 1000;
+        } else {
+          amount = parseInt(str, 10);
+        }
+      }
+
+      if (isNaN(amount) || amount <= 0) {
+        alert('올바른 배팅 금액을 입력해주세요!');
         return;
       }
       if (userPoints < amount) {
@@ -659,7 +982,7 @@
         return;
       }
 
-      fetch('/api/bet', {
+      fetch(`${API_BASE}/api/bet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -674,8 +997,20 @@
       .then(res => {
         if (res.success) {
           userPoints = res.remain_points;
+          myBet = { horseId, amount };
           updatePointsDisplay();
-          spawnFloatingEmoji('💸');
+          spawnFloatingEmoji('💸', horseId);
+
+          // 입력창 비우기 및 베팅 완료 시각 표시
+          for (let i = 1; i <= 3; i++) {
+            const inp = document.getElementById(`betInput${i}`);
+            if (inp) inp.value = '';
+          }
+          const card = document.getElementById(`betCard${horseId - 1}`);
+          if (card) {
+            card.style.borderColor = '#107c41';
+            card.style.background = '#f0fff4';
+          }
           alert(`✅ ${horseId}번 말에 ${amount.toLocaleString()}P 투자 완료!`);
         } else {
           alert(res.message || '배팅 실패');
@@ -687,23 +1022,31 @@
     }
 
     // SSE 구독
-    const evtSource = new EventSource(`/api/events?race_id=${raceId}`);
+    const evtSource = new EventSource(`${API_BASE}/api/events?race_id=${raceId}`);
     evtSource.addEventListener('reaction', e => {
       try {
         const d = JSON.parse(e.data);
-        if (d && d.emoji) spawnFloatingEmoji(d.emoji);
+        if (d && d.emoji) spawnFloatingEmoji(d.emoji, d.horse_id || 0);
+      } catch (err) {}
+    });
+    evtSource.addEventListener('chat', e => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d && d.text) {
+          addLiveChatMessage(d.user_name || '팀원', d.text, d.active_title || '', d.horse_id || 0);
+          spawnFloatingEmoji('💬', d.horse_id || 0);
+        }
       } catch (err) {}
     });
     evtSource.addEventListener('bet', e => {
       try {
         const d = JSON.parse(e.data);
-        if (d) spawnFloatingEmoji('💸');
+        if (d) spawnFloatingEmoji('💸', d.horse_id || 0);
       } catch (err) {}
     });
 
-    // 1초마다 서버와 남은시간 및 동물 라인업 동기화
-    syncWithServerRoom();
-    const countdownInterval = setInterval(syncWithServerRoom, 1000);
+    // 5초마다 서버와 남은시간 및 동물 라인업 보조 동기화
+    setInterval(syncWithServerRoom, 5000);
 
     let isRacing = false;
     let raceStartTime = null;
@@ -713,8 +1056,21 @@
       isRacing = true;
       clearInterval(countdownInterval);
 
-      const bettingBar = document.getElementById('bettingBar');
-      if (bettingBar) bettingBar.style.display = 'none';
+      // 경마가 시작되어도 하단 UI(높이 145px)는 사라지지 않고 유지!
+      // 대신 입력창들만 읽기 전용/마감 모드로 자연스럽게 잠금 처리
+      for (let i = 1; i <= 3; i++) {
+        const inp = document.getElementById(`betInput${i}`);
+        if (inp) {
+          inp.disabled = true;
+          inp.placeholder = '배팅 마감';
+        }
+      }
+      const allInBtns = document.querySelectorAll('.btn-allin');
+      allInBtns.forEach(b => {
+        b.disabled = true;
+        b.style.opacity = '0.5';
+        b.style.cursor = 'not-allowed';
+      });
 
       document.getElementById('statusTag').textContent = '하향 집계 중';
       document.getElementById('statusTag').style.background = '#d83b01';
@@ -785,6 +1141,7 @@
         if (winnerIdx !== -1 && curTime > finishTime + 0.8) break;
       }
 
+      finalPositions = [profiles[0].pos, profiles[1].pos, profiles[2].pos];
       winnerRacer = racers[winnerIdx !== -1 ? winnerIdx : 0];
       TOTAL_DURATION = timeline[timeline.length - 1].t;
     }
@@ -849,16 +1206,56 @@
       if (currentSec >= TOTAL_DURATION && !hasShownModal) {
         hasShownModal = true;
         setTimeout(() => {
-          const modal = document.getElementById('resultModal');
+          fetchWallet(); // 최신 지갑 잔고 다시 가져오기
+          
+          // 최종 1, 2, 3위 순위 계산
+          const sortedRacers = racers.map((r, idx) => ({
+            ...r,
+            finishScore: finalPositions[idx] || 0
+          })).sort((a, b) => b.finishScore - a.finishScore);
+
+          const winner = sortedRacers[0];
+          document.getElementById('resRaceNo').textContent = raceId;
+
+          let betResultHtml = '';
+          if (myBet) {
+            if (myBet.horseId === winner.id) {
+              const prize = Math.floor(myBet.amount * winner.odds);
+              betResultHtml = `
+                <div style="background: #dff6dd; border: 1px solid #107c41; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                  🎉 <strong>배팅 적중 대성공!</strong><br>
+                  획득 상금: <span style="color:#107c41; font-weight:bold;">+${prize.toLocaleString()} P</span> (배당 ${winner.odds}x)
+                </div>`;
+            } else {
+              betResultHtml = `
+                <div style="background: #fde7e9; border: 1px solid #a80000; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                  💸 <strong>배팅 미적중</strong> (-${myBet.amount.toLocaleString()} P)<br>
+                  <span style="font-size:10px; color:#555;">(잔액이 부족하면 아래 [탕비실 알바] 버튼으로 충전하세요!)</span>
+                </div>`;
+            }
+          } else {
+            betResultHtml = `
+              <div style="background: #f3f2f1; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size: 10px; color: #605e5c;">
+                아무도 배팅하지 않은 평화로운 레이스였습니다.
+              </div>`;
+          }
+
           const modalText = document.getElementById('modalText');
           modalText.innerHTML = `
-            <strong>🏆 최종 최우수 달성 부서</strong><br><br>
-            <div style="font-size: 13px; font-weight: bold; color: #107c41; margin-bottom: 6px;">
-              ${winnerRacer.emoji} ${winnerRacer.title} (${winnerRacer.dept})
+            <div style="font-size: 11px; margin-bottom: 8px;">
+              🏁 <strong>최종 결승선 통과 순위</strong>:
+              <div style="margin-top: 4px; line-height: 1.6;">
+                🥇 <strong>1위</strong>: ${sortedRacers[0].id}번 ${sortedRacers[0].emoji} ${sortedRacers[0].title} (${sortedRacers[0].dept}) <span style="color:#107c41; font-weight:bold;">[${sortedRacers[0].odds}x]</span><br>
+                🥈 <strong>2위</strong>: ${sortedRacers[1].id}번 ${sortedRacers[1].emoji} ${sortedRacers[1].title} (${sortedRacers[1].dept})<br>
+                🥉 <strong>3위</strong>: ${sortedRacers[2].id}번 ${sortedRacers[2].emoji} ${sortedRacers[2].title} (${sortedRacers[2].dept})
+              </div>
             </div>
-            하향 데이터 집계가 결승선까지 완벽하게 검증 및 정산되었습니다.
+            ${betResultHtml}
+            <div style="background: #eef2f5; padding: 8px; border-radius: 4px; font-size: 11px;">
+              💰 <strong>현재 내 지갑 잔액</strong>: <span style="color:#107c41; font-weight:bold;" id="modalWalletBalance">${userPoints.toLocaleString()} P</span>
+            </div>
           `;
-          modal.style.display = 'block';
+          document.getElementById('resultModal').style.display = 'block';
         }, 500);
       }
 
@@ -1009,6 +1406,174 @@
 
     function closeModal() {
       document.getElementById('resultModal').style.display = 'none';
+    }
+
+    function closeRankingModal() {
+      document.getElementById('rankingModal').style.display = 'none';
+    }
+
+    function begPoints() {
+      if (!currentUserId) {
+        alert('사용자 정보를 확인할 수 없습니다.');
+        return;
+      }
+      fetch(`${API_BASE}/api/beg`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: String(currentUserId),
+          user_name: String(currentUserName)
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          userPoints = res.remain_points;
+          updatePointsDisplay();
+          const modalBal = document.getElementById('modalWalletBalance');
+          if (modalBal) modalBal.textContent = `${userPoints.toLocaleString()} P`;
+        }
+      })
+      .catch(err => {
+        alert('알바 요청 중 오류: ' + err.message);
+      });
+    }
+
+    function showRankingModal() {
+      const modal = document.getElementById('rankingModal');
+      const body = document.getElementById('rankingModalText');
+      body.innerHTML = '불러오는 중...';
+      modal.style.display = 'block';
+
+      fetch(`${API_BASE}/api/ranking`)
+        .then(r => r.json())
+        .then(list => {
+          if (!list || list.length === 0) {
+            body.innerHTML = '등록된 랭킹 데이터가 없습니다.';
+            return;
+          }
+          let rows = list.map(item => {
+            let medal = `${item.rank}등`;
+            if (item.rank === 1) medal = '🥇 1등';
+            else if (item.rank === 2) medal = '🥈 2등';
+            else if (item.rank === 3) medal = '🥉 3등';
+            return `
+              <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f3f2f1;">
+                <span><strong>${medal}</strong> ${item.name}</span>
+                <span style="color:#107c41; font-weight:bold;">${item.points.toLocaleString()} P</span>
+              </div>`;
+          }).join('');
+          body.innerHTML = rows;
+        })
+        .catch(err => {
+          body.innerHTML = '랭킹 조회 실패: ' + err.message;
+        });
+    }
+
+    function showTitlesModal() {
+      const modal = document.getElementById('titlesModal');
+      const body = document.getElementById('titlesModalText');
+      body.innerHTML = '불러오는 중...';
+      modal.style.display = 'block';
+
+      fetch(`${API_BASE}/api/titles?user_id=${encodeURIComponent(currentUserId)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data || !data.titles) {
+            body.innerHTML = '칭호 데이터를 불러올 수 없습니다.';
+            return;
+          }
+          const activeTitle = data.activeTitle || '';
+          let html = `
+            <div style="font-size:11px; margin-bottom:8px; color:#605e5c;">
+              달성 현황: <strong>${data.unlockedCount} / ${data.totalCount}</strong>개 | 
+              현재 장착: <strong style="color:#107c41;">${activeTitle ? `[${activeTitle}]` : '(없음)'}</strong>
+            </div>`;
+
+          html += data.titles.map(t => {
+            const isEquipped = activeTitle === t.cleanName;
+            const isUnlocked = t.unlocked;
+            let actionBtn = '';
+            if (isEquipped) {
+              actionBtn = `<span style="color:#107c41; font-weight:bold; font-size:11px;">✅ 장착중</span>`;
+            } else if (isUnlocked) {
+              actionBtn = `<button class="btn-beg" style="background:#e1dfdd; color:#201f1e; border-color:#8a8886;" onclick="equipTitle('${t.id}')">장착</button>`;
+            } else {
+              actionBtn = `<span style="color:#a19f9d; font-size:10px;">🔒 잠김</span>`;
+            }
+
+            return `
+              <div class="title-item-row ${!isUnlocked ? 'title-item-locked' : ''}">
+                <div>
+                  <div style="font-weight:bold; font-size:11px;">${t.name}</div>
+                  <div style="font-size:10px; color:#605e5c;">${t.desc}</div>
+                </div>
+                <div>${actionBtn}</div>
+              </div>`;
+          }).join('');
+
+          body.innerHTML = html;
+        })
+        .catch(err => {
+          body.innerHTML = '칭호 조회 실패: ' + err.message;
+        });
+    }
+
+    function equipTitle(titleId) {
+      fetch(`${API_BASE}/api/title/equip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: String(currentUserId),
+          title_id: titleId,
+          action: 'equip'
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          const badge = document.getElementById('userTitleBadge');
+          if (badge) badge.textContent = res.activeTitle ? `🎖️ ${res.activeTitle}` : '🎖️ 칭호';
+          showTitlesModal();
+        }
+      })
+      .catch(err => alert('칭호 장착 실패: ' + err.message));
+    }
+
+    function clearTitle() {
+      fetch(`${API_BASE}/api/title/equip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: String(currentUserId),
+          action: 'clear'
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          const badge = document.getElementById('userTitleBadge');
+          if (badge) badge.textContent = '🎖️ 칭호';
+          showTitlesModal();
+        }
+      })
+      .catch(err => alert('칭호 해제 실패: ' + err.message));
+    }
+
+    function closeTitlesModal() {
+      document.getElementById('titlesModal').style.display = 'none';
+    }
+
+    function startNextRace() {
+      closeModal();
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.close) {
+        window.Telegram.WebApp.close();
+      } else {
+        alert('텔레그램 채팅방으로 돌아갑니다.');
+      }
     }
   </script>
 </body>
