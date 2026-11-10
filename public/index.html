@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎮 사내 올인원 게임 플랫폼 (Race & Aviator)</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-red: #ef4444;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* 헤더 네비게이션 */
+    header {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand { font-size: 1.2rem; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 8px; }
+    .user-pill {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+    .user-pill .points { color: #facc15; font-weight: bold; }
+
+    /* 탭 메뉴 */
+    .nav-tabs {
+      display: flex;
+      background: #111827;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 10px;
+      gap: 5px;
+    }
+    .tab-btn {
+      padding: 12px 18px;
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: var(--text-main);
+      border-bottom-color: var(--primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    /* 메인 컨테이너 */
+    main {
+      flex: 1;
+      padding: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .game-section { display: none; }
+    .game-section.active { display: flex; flex-direction: column; gap: 16px; }
+
+    /* 카드 스타일 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    /* 경마 경기장 */
+    .track-container {
+      background: #090d16;
+      border: 2px solid #22c55e33;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .lane {
+      display: flex;
+      align-items: center;
+      position: relative;
+      background: #1e293b80;
+      border-radius: 8px;
+      padding: 8px 12px;
+      overflow: hidden;
+    }
+    .lane-info {
+      width: 140px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+    }
+    .lane-track {
+      flex: 1;
+      position: relative;
+      height: 36px;
+      background: repeating-linear-gradient(90deg, #334155 0, #334155 2px, transparent 2px, transparent 40px);
+      display: flex;
+      align-items: center;
+    }
+    .animal-runner {
+      position: absolute;
+      left: 0;
+      font-size: 1.6rem;
+      transition: left 0.4s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .finish-gate {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+
+    /* 에비에이터 비행 화면 */
+    .aviator-screen {
+      background: #020617;
+      border: 2px solid #38bdf833;
+      border-radius: 12px;
+      height: 320px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .flight-multiplier {
+      font-size: 4rem;
+      font-weight: 900;
+      color: #38bdf8;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      z-index: 5;
+    }
+    .flight-multiplier.crashed {
+      color: var(--accent-red);
+      text-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    }
+    .plane-icon {
+      position: absolute;
+      font-size: 3rem;
+      transition: all 0.1s linear;
+      z-index: 4;
+    }
+
+    /* 배팅 콘솔 */
+    .bet-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bet-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 8px;
+    }
+    .btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-cashout { background: var(--accent-yellow); color: #000; font-size: 1.2rem; font-weight: 800; padding: 14px; }
+    .btn-cashout:hover { background: #eab308; }
+    .btn-danger { background: var(--accent-red); color: white; }
+    .btn-secondary { background: #334155; color: white; }
+
+    /* 우측 사이드바: 실시간 채팅 & 랭킹 */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .chat-box {
+      flex: 1;
+      height: 380px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    .chat-msg {
+      background: #0f172a80;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .chat-msg .author { font-weight: bold; color: #38bdf8; }
+    .chat-msg .time { font-size: 0.75rem; color: var(--text-sub); margin-left: 6px; }
+    .chat-input-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .chat-input-bar input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: #0f172a;
+      color: white;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 상단 네비게이션 -->
+  <header>
+    <div class="brand">
+      <span>🚀</span>
+      <span>사내 올인원 웹 아케이드</span>
+    </div>
+    <div class="user-pill">
+      <span id="userName">플레이어</span>
+      <span class="points" id="userPoints">0 P</span>
+      <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="requestBeg()">🧹 알바</button>
+    </div>
+  </header>
+
+  <!-- 탭 네비게이션 -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('race')">🏇 동물 달리기</button>
+    <button class="tab-btn" onclick="switchTab('aviator')">🚀 Aviator 비행기</button>
+    <button class="tab-btn" onclick="switchTab('ranking')">🏆 부자 랭킹</button>
+    <button class="tab-btn" onclick="switchTab('titles')">🎖️ 내 칭호</button>
+  </div>
+
+  <!-- 메인 게임 영역 -->
+  <main>
+    <div class="content-area">
+
+      <!-- 1. 경마 레이스 탭 -->
+      <section id="tab-race" class="game-section active">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2 id="raceTitle">🎪 제 --회 동물 달리기</h2>
+            <span id="raceStatusBadge" style="padding: 4px 10px; border-radius: 12px; background: #3b82f6; font-size: 0.85rem;">배팅 중</span>
+          </div>
+
+          <!-- 트랙 -->
+          <div class="track-container" id="raceTrack">
+            <!-- 동적 레인 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 경마 배팅 패널 -->
+        <div class="card bet-panel">
+          <h3>💰 레이스 배팅</h3>
+          <div id="horseBetButtons" style="display: flex; gap: 8px;"></div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" id="raceBetAmount" placeholder="배팅 금액 (예: 50000)" style="flex: 1; padding: 10px; border-radius: 6px; background: #0f172a; border: 1px solid var(--border-color); color: white;">
+            <button class="btn btn-secondary" onclick="setBetAmount('race', 10000)">+1만</button>
+            <button class="btn btn-secondary" onclick="setBetAmount('race', 100000)">+10만</button>
+            <button class="btn btn-danger" onclick="setAllIn('race')">올인</button>
+          </div>
+          <button class="btn btn-primary" onclick="submitRaceBet()">배팅 완료</button>
+        </div>
+      </section>
+
+      <!-- 2. 에비에이터 탭 -->
+      <section id="tab-aviator" class="game-section">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2 id="flightTitle">🚀 제 --편 Aviator 비행</h2>
+            <span id="flightStatusBadge" style="padding: 4px 10px; border-radius: 12px; background: #3b82f6; font-size: 0.85rem;">탑승 수속 중</span>
+          </div>
+
+          <div class="aviator-screen" id="aviatorScreen">
+            <div class="flight-multiplier" id="aviatorMultiplier">1.00x</div>
+            <div class="plane-icon" id="planeIcon" style="bottom: 20px; left: 20px;">✈️</div>
+          </div>
+        </div>
+
+        <div class="card bet-panel">
+          <button id="cashOutBtn" class="btn btn-cashout" style="display: none;" onclick="submitCashOut()">🪂 지금 탈출하기!</button>
+          
+          <div id="aviatorBetControls">
+            <h3>💰 비행기 탑승권 구매</h3>
+            <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+              <input type="number" id="aviatorBetAmount" placeholder="탑승 금액 (예: 50000)" style="flex: 1; padding: 10px; border-radius: 6px; background: #0f172a; border: 1px solid var(--border-color); color: white;">
+              <button class="btn btn-secondary" onclick="setBetAmount('aviator', 10000)">+1만</button>
+              <button class="btn btn-secondary" onclick="setBetAmount('aviator', 100000)">+10만</button>
+              <button class="btn btn-danger" onclick="setAllIn('aviator')">올인</button>
+            </div>
+            <button class="btn btn-primary" style="margin-top: 10px; width: 100%;" onclick="submitAviatorBet()">탑승 수속 (배팅)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 랭킹 탭 -->
+      <section id="tab-ranking" class="game-section">
+        <div class="card">
+          <h2>🏆 사내 부자 랭킹 TOP 10</h2>
+          <div id="rankingList" style="margin-top: 16px; display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+      </section>
+
+      <!-- 4. 내 칭호 탭 -->
+      <section id="tab-titles" class="game-section">
+        <div class="card">
+          <h2>🎖️ 맞춤 칭호 도감</h2>
+          <div id="titleList" style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 우측 실시간 채팅 & 공지 -->
+    <aside class="sidebar">
+      <div class="card chat-box">
+        <h3>💬 실시간 사내 라운지</h3>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-msg">
+            <span class="author">시스템</span>: <span>웹 플랫폼에 접속했습니다!</span>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <input type="text" id="chatInput" placeholder="응원 메시지 입력..." onkeydown="if(event.key==='Enter') sendChat()">
+          <button class="btn btn-primary" onclick="sendChat()">전송</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // 유저 초기 세션 (로컬 스토리지 유지)
+    let currentUserId = localStorage.getItem('spyfall_user_id') || ('user_' + Math.floor(Math.random() * 90000 + 10000));
+    let currentUserName = localStorage.getItem('spyfall_user_name') || prompt('사용하실 사내 닉네임을 입력해주세요:', '직원_' + currentUserId.slice(-4)) || '익명';
+    localStorage.setItem('spyfall_user_id', currentUserId);
+    localStorage.setItem('spyfall_user_name', currentUserName);
+
+    document.getElementById('userName').innerText = currentUserName;
+
+    let userWallet = { points: 0 };
+    let currentRaceState = null;
+    let selectedHorseId = 1;
+    let currentFlightState = null;
+    let hasAviatorBet = false;
+
+    // WebSocket 연결
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+    ws.onopen = () => {
+      console.log('WS connected');
+      loadWallet();
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      handleWsEvent(msg.event, msg.data);
+    };
+
+    function handleWsEvent(event, data) {
+      // 1. 초기 상태 동기화
+      if (event === 'init_state') {
+        if (data.race) updateRaceUI(data.race);
+        if (data.aviator) updateAviatorUI(data.aviator);
+      }
+
+      // 2. 경마 이벤트
+      if (event === 'race_created') {
+        updateRaceUI(data);
+      }
+      if (event === 'race_started') {
+        document.getElementById('raceStatusBadge').innerText = '달리는 중! 🔥';
+        document.getElementById('raceStatusBadge').style.background = '#ef4444';
+      }
+      if (event === 'race_tick') {
+        for (const h of data.horses) {
+          const runner = document.getElementById(`runner-${h.id}`);
+          if (runner) {
+            const pct = Math.min(94, (h.progress / 14) * 94);
+            runner.style.left = `${pct}%`;
+          }
+        }
+      }
+      if (event === 'race_finished') {
+        document.getElementById('raceStatusBadge').innerText = `우승: ${data.winner.emoji} ${data.winner.name}`;
+        loadWallet();
+      }
+
+      // 3. 에비에이터 이벤트
+      if (event === 'aviator_boarding') {
+        updateAviatorUI(data);
+        hasAviatorBet = false;
+        document.getElementById('cashOutBtn').style.display = 'none';
+        document.getElementById('aviatorBetControls').style.display = 'block';
+      }
+      if (event === 'aviator_takeoff') {
+        document.getElementById('flightStatusBadge').innerText = '비행 중! 💨';
+        document.getElementById('flightStatusBadge').style.background = '#10b981';
+        if (hasAviatorBet) {
+          document.getElementById('cashOutBtn').style.display = 'block';
+          document.getElementById('aviatorBetControls').style.display = 'none';
+        }
+      }
+      if (event === 'aviator_tick') {
+        const multEl = document.getElementById('aviatorMultiplier');
+        multEl.innerText = `${data.multiplier.toFixed(2)}x`;
+        multEl.classList.remove('crashed');
+
+        const plane = document.getElementById('planeIcon');
+        const progress = Math.min(80, (data.multiplier - 1) * 15);
+        plane.style.left = `${20 + progress * 0.7}%`;
+        plane.style.bottom = `${20 + progress * 0.6}%`;
+
+        if (hasAviatorBet) {
+          document.getElementById('cashOutBtn').innerText = `🪂 ${data.multiplier.toFixed(2)}x 탈출하기!`;
+        }
+      }
+      if (event === 'aviator_crashed') {
+        const multEl = document.getElementById('aviatorMultiplier');
+        multEl.innerText = `CRASHED (${data.finalMultiplier.toFixed(2)}x)`;
+        multEl.classList.add('crashed');
+        document.getElementById('flightStatusBadge').innerText = '폭발!';
+        document.getElementById('flightStatusBadge').style.background = '#ef4444';
+        document.getElementById('cashOutBtn').style.display = 'none';
+        hasAviatorBet = false;
+        loadWallet();
+      }
+
+      // 4. 채팅
+      if (event === 'chat_message') {
+        appendChat(data.user, data.text, data.time);
+      }
+    }
+
+    // REST API 연동
+    async function loadWallet() {
+      const res = await fetch(`/api/wallet?userId=${currentUserId}&name=${encodeURIComponent(currentUserName)}`);
+      const data = await res.json();
+      if (data.ok) {
+        userWallet = data.wallet;
+        document.getElementById('userPoints').innerText = `${data.wallet.formattedPoints} P`;
+      }
+    }
+
+    async function requestBeg() {
+      const res = await fetch('/api/wallet/beg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId, name: currentUserName })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        alert(data.message);
+        loadWallet();
+      } else {
+        alert(data.error);
+      }
+    }
+
+    function updateRaceUI(race) {
+      currentRaceState = race;
+      document.getElementById('raceTitle').innerText = `🎪 제 ${race.raceNo}회 대환장 동물 달리기`;
+      document.getElementById('raceStatusBadge').innerText = '배팅 접수 중 (30초)';
+      document.getElementById('raceStatusBadge').style.background = '#3b82f6';
+
+      const track = document.getElementById('raceTrack');
+      track.innerHTML = '';
+      const btnGroup = document.getElementById('horseBetButtons');
+      btnGroup.innerHTML = '';
+
+      race.horses.forEach((h) => {
+        // 레인
+        const lane = document.createElement('div');
+        lane.className = 'lane';
+        lane.innerHTML = `
+          <div class="lane-info">
+            <strong>${h.id}번</strong> ${h.emoji} <span>${h.name}</span> <small>(${h.odds}배)</small>
+          </div>
+          <div class="lane-track">
+            <div class="animal-runner" id="runner-${h.id}">${h.emoji}</div>
+            <div class="finish-gate"></div>
+          </div>
+        `;
+        track.appendChild(lane);
+
+        // 배팅 선택 버튼
+        const b = document.createElement('button');
+        b.className = `btn ${selectedHorseId === h.id ? 'btn-primary' : 'btn-secondary'}`;
+        b.innerText = `${h.id}번 ${h.emoji} (${h.odds}배)`;
+        b.onclick = () => {
+          selectedHorseId = h.id;
+          updateRaceUI(race);
+        };
+        btnGroup.appendChild(b);
+      });
+    }
+
+    function updateAviatorUI(flight) {
+      currentFlightState = flight;
+      document.getElementById('flightTitle').innerText = `🚀 제 ${flight.flightNo}편 Aviator 비행`;
+      document.getElementById('flightStatusBadge').innerText = '탑승 수속 중';
+      document.getElementById('flightStatusBadge').style.background = '#3b82f6';
+      document.getElementById('aviatorMultiplier').innerText = '1.00x';
+      document.getElementById('aviatorMultiplier').classList.remove('crashed');
+      const plane = document.getElementById('planeIcon');
+      plane.style.left = '20px';
+      plane.style.bottom = '20px';
+    }
+
+    function setBetAmount(game, val) {
+      const input = document.getElementById(`${game}BetAmount`);
+      input.value = (parseInt(input.value || 0, 10) + val);
+    }
+
+    function setAllIn(game) {
+      const input = document.getElementById(`${game}BetAmount`);
+      input.value = userWallet.points;
+    }
+
+    function submitRaceBet() {
+      const amount = parseInt(document.getElementById('raceBetAmount').value, 10);
+      if (!amount || amount <= 0) return alert('배팅 금액을 입력해주세요.');
+
+      ws.send(JSON.stringify({
+        type: 'race_bet',
+        payload: {
+          user: { id: currentUserId, name: currentUserName },
+          horseId: selectedHorseId,
+          amount,
+          isAllIn: (amount >= userWallet.points)
+        }
+      }));
+      alert(`${selectedHorseId}번에 배팅이 완료되었습니다!`);
+    }
+
+    function submitAviatorBet() {
+      const amount = parseInt(document.getElementById('aviatorBetAmount').value, 10);
+      if (!amount || amount <= 0) return alert('탑승 금액을 입력해주세요.');
+
+      ws.send(JSON.stringify({
+        type: 'aviator_bet',
+        payload: {
+          user: { id: currentUserId, name: currentUserName },
+          amount,
+          isAllIn: (amount >= userWallet.points)
+        }
+      }));
+      hasAviatorBet = true;
+      alert('비행기 탑승권 구매가 완료되었습니다!');
+    }
+
+    function submitCashOut() {
+      ws.send(JSON.stringify({
+        type: 'aviator_cashout',
+        payload: { user: { id: currentUserId, name: currentUserName } }
+      }));
+    }
+
+    function sendChat() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      ws.send(JSON.stringify({
+        type: 'chat',
+        payload: { user: { id: currentUserId, name: currentUserName }, text }
+      }));
+      input.value = '';
+    }
+
+    function appendChat(author, text, time) {
+      const box = document.getElementById('chatMessages');
+      const el = document.createElement('div');
+      el.className = 'chat-msg';
+      el.innerHTML = `<span class="author">${author}</span>: <span>${text}</span> <span class="time">${time}</span>`;
+      box.appendChild(el);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+
+      if (tabId === 'ranking') loadRanking();
+      if (tabId === 'titles') loadTitles();
+    }
+
+    async function loadRanking() {
+      const res = await fetch('/api/ranking');
+      const data = await res.json();
+      const list = document.getElementById('rankingList');
+      list.innerHTML = '';
+      data.rankings.forEach((r, idx) => {
+        const item = document.createElement('div');
+        item.style.padding = '10px';
+        item.style.background = '#0f172a';
+        item.style.borderRadius = '8px';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.innerHTML = `<span><strong>${idx + 1}등</strong> ${r.name} <small style="color:#60a5fa;">[${r.activeTitle || '일반'}]</small></span> <strong style="color:#facc15;">${r.formattedPoints} P</strong>`;
+        list.appendChild(item);
+      });
+    }
+
+    async function loadTitles() {
+      const res = await fetch(`/api/wallet?userId=${currentUserId}&name=${encodeURIComponent(currentUserName)}`);
+      const data = await res.json();
+      const list = document.getElementById('titleList');
+      list.innerHTML = '';
+      data.allTitles.forEach(t => {
+        const item = document.createElement('div');
+        item.style.padding = '12px';
+        item.style.background = t.unlocked ? '#1e293b' : '#0f172a';
+        item.style.border = t.unlocked ? '1px solid #3b82f6' : '1px solid #334155';
+        item.style.borderRadius = '8px';
+        item.innerHTML = `
+          <h4>${t.unlocked ? '🔓' : '🔒'} ${t.name}</h4>
+          <p style="font-size:0.8rem; color:#94a3b8; margin: 4px 0;">${t.desc}</p>
+          ${t.unlocked ? `<button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="equipTitle('${t.id}')">장착하기</button>` : ''}
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function equipTitle(titleId) {
+      const res = await fetch('/api/wallet/title', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId, titleId })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        alert(`[${data.activeTitle}] 칭호를 장착했습니다!`);
+        loadWallet();
+      }
+    }
+  </script>
+</body>
+</html>
