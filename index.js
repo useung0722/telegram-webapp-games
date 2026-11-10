@@ -272,6 +272,14 @@ function getWallet(userId, name) {
   if (w.bankruptHit === undefined) w.bankruptHit = false;
   if (w.allInWon === undefined) w.allInWon = false;
   if (!w.unlockedTitles) w.unlockedTitles = [];
+
+  // 🪙 파산 자동 구제: 잔액이 0원 이하가 되면 구걸 없이 즉시 10만 P 지급
+  if (w.points <= 0) {
+    w.points = 100000;
+    w.bankruptHit = true;
+    saveWallets();
+  }
+
   return w;
 }
 

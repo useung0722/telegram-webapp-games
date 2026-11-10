@@ -679,9 +679,12 @@ function initHorseRace(bot, helpers) {
 
             winners.push(`🎉 **${bet.name}**: +${formatKoreanNumber(prize)} P (배당 ${winner.odds}x)`);
           } else {
-            losers.push(`💸 **${bet.name}**: -${formatKoreanNumber(bet.amount)} P`);
-            if (w.points === 0) {
+            if (w.points <= 0) {
+              w.points = 100000;
               w.bankruptHit = true;
+              losers.push(`💸 **${bet.name}**: -${formatKoreanNumber(bet.amount)} P (💥 파산 구제금 +10만 P 자동 지급!)`);
+            } else {
+              losers.push(`💸 **${bet.name}**: -${formatKoreanNumber(bet.amount)} P`);
             }
           }
 

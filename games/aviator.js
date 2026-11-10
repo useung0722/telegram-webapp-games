@@ -315,7 +315,13 @@ function initAviator(bot, helpers) {
             w.wins = (w.wins || 0) + 1;
             survivors.push(`• 🪂 **${b.name}**: **${b.cashMultiplier.toFixed(2)}x** 탈출 성공! (+${formatKoreanNumber(b.profit)} P 이익)`);
           } else {
-            casualties.push(`• 💀 **${b.name}**: 폭발로 침몰... (-${formatKoreanNumber(b.amount)} P)`);
+            if (w.points <= 0) {
+              w.points = 100000;
+              w.bankruptHit = true;
+              casualties.push(`• 💀 **${b.name}**: 폭발로 침몰... (-${formatKoreanNumber(b.amount)} P) ➡️ 💥 파산 구제금 +10만 P 자동 지급!`);
+            } else {
+              casualties.push(`• 💀 **${b.name}**: 폭발로 침몰... (-${formatKoreanNumber(b.amount)} P)`);
+            }
           }
         }
         saveWallets();
