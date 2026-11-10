@@ -248,15 +248,11 @@ function getRaceBettingText(race) {
       .join('\n');
   }
 
-  const now = Date.now();
-  const remainSec = Math.max(0, Math.ceil(((race.autoStartAt || (now + 60000)) - now) / 1000));
-
   return `🎪 **[제 ${race.raceNo}회 대환장 동물 달리기 대회] 배팅 오픈!**\n\n` +
     `🏁 **출전 선수 명단**:\n${horseList}\n\n` +
     `📊 **배팅 내역**:\n${betList}\n\n` +
-    `⏳ **자동 출발**: 약 **${remainSec}초 후** 경기가 자동으로 시작됩니다!\n` +
     `💬 **배팅 방법**: 버튼 클릭 또는 채팅창에 **\`1번 3000\`**, **\`2번 5천\`**, **\`3번 올인\`** 타이핑!\n` +
-    `👇 기다리지 않고 바로 달리려면 아래 [🏁 경기 시작] 을 누르세요!\n` +
+    `👇 배팅 후 [🏁 경기 시작] 을 누르세요! (1분 뒤 자동 출발)\n` +
     `⚠️ **주의**: 경주가 시작되면 달리는 화면이 가려지지 않도록 채팅이 자동 삭제됩니다.`;
 }
 
@@ -268,9 +264,7 @@ function getRaceBettingKeyboard(race) {
       Markup.button.callback(`${h.emoji} ${i + 1}번 (올인)`, `bet_${i + 1}_all`)
     ];
   });
-  const now = Date.now();
-  const remainSec = Math.max(0, Math.ceil(((race.autoStartAt || (now + 60000)) - now) / 1000));
-  horseButtons.push([Markup.button.callback(`🏁 바로 시작 (자동 출발: ${remainSec}초)`, 'start_race_now')]);
+  horseButtons.push([Markup.button.callback('🏁 경기 시작 (출발!)', 'start_race_now')]);
   return Markup.inlineKeyboard(horseButtons);
 }
 
