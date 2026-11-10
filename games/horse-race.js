@@ -21,6 +21,46 @@ function saveHorseStats() {
   } catch (e) {}
 }
 
+function formatKoreanNumber(val) {
+  if (val === undefined || val === null) return '0';
+  let isNegative = false;
+  let str = String(val).trim();
+  if (str.startsWith('-')) {
+    isNegative = true;
+    str = str.slice(1);
+  }
+  try {
+    let bn = BigInt(str);
+    if (bn === 0n) return '0';
+    if (bn < 10000n) return (isNegative ? '-' : '') + bn.toLocaleString();
+
+    const units = [
+      { val: 10n ** 16n, name: '경' },
+      { val: 10n ** 12n, name: '조' },
+      { val: 10n ** 8n, name: '억' },
+      { val: 10n ** 4n, name: '만' }
+    ];
+
+    for (const u of units) {
+      if (bn >= u.val) {
+        const quotient = bn / u.val;
+        const remainder = bn % u.val;
+        const decimalDigit = Number((remainder * 10n) / u.val);
+        let res = '';
+        if (quotient < 100n && decimalDigit > 0) {
+          res = `${quotient.toLocaleString()}.${decimalDigit}${u.name}`;
+        } else {
+          res = `${quotient.toLocaleString()}${u.name}`;
+        }
+        return (isNegative ? '-' : '') + res;
+      }
+    }
+  } catch (e) {}
+
+  const num = Number(val);
+  return (isNegative ? '-' : '') + (isNaN(num) ? '0' : num.toLocaleString());
+}
+
 function getHorseWins(name) {
   return (horseStats[name] && horseStats[name].wins) || 0;
 }
@@ -204,7 +244,7 @@ function getRaceBettingText(race) {
   let betList = '아직 배팅이 없습니다.';
   if (race.bets.size > 0) {
     betList = Array.from(race.bets.values())
-      .map(b => `• **${b.name}**: ${b.horseId}번(${b.racerName})에 ${b.amount.toLocaleString()} P`)
+      .map(b => `• **${b.name}**: ${b.horseId}번(${b.racerName})에 ${formatKoreanNumber(b.amount)} P`)
       .join('\n');
   }
 
@@ -455,9 +495,9 @@ function initHorseRace(bot, helpers) {
             if (profit > (w.maxProfit || 0)) w.maxProfit = profit;
             if (bet.isAllIn) w.allInWon = true;
 
-            winners.push(`🎉 **${bet.name}**: +${prize.toLocaleString()} P (배당 ${winner.odds}x)`);
+            winners.push(`🎉 **${bet.name}**: +${formatKoreanNumber(prize)} P (배당 ${winner.odds}x)`);
           } else {
-            losers.push(`💸 **${bet.name}**: -${bet.amount.toLocaleString()} P`);
+            losers.push(`💸 **${bet.name}**: -${formatKoreanNumber(bet.amount)} P`);
             if (w.points === 0) {
               w.bankruptHit = true;
             }
@@ -532,7 +572,7 @@ function initHorseRace(bot, helpers) {
       return { success: false, reason: '배팅할 포인트가 없습니다! (/구걸)' };
     }
     if (w.points < amount) {
-      return { success: false, reason: `잔액이 부족합니다! (현재: ${w.points.toLocaleString()} P)` };
+      return { success: false, reason: `잔액이 부족합니다! (현재: ${formatKoreanNumber(w.points)} P)` };
     }
 
     const currentBet = race.bets.get(user.id);
@@ -575,7 +615,7 @@ function initHorseRace(bot, helpers) {
       return ctx.answerCbQuery(res.reason, { show_alert: true });
     }
 
-    await ctx.answerCbQuery(`${res.racerDisplayName}에 ${res.amount.toLocaleString()} P 배팅 완료!`);
+    await ctx.answerCbQuery(`${res.racerDisplayName}에 ${formatKoreanNumber(res.amount)} P 배팅 완료!`);
 
     try {
       await ctx.editMessageText(getRaceBettingText(res.race), {
@@ -592,8 +632,8 @@ function initHorseRace(bot, helpers) {
     if (!race || race.state !== 'betting') return false;
 
     const trimmed = text.trim();
-    // 패턴 매칭: "1번 3000", "1 5000", "2번 올인", "3번 1만", "1번 5천", "/배팅 1 3000" 등
-    const match = trimmed.match(/^(?:\/배팅\s+|\/bet\s+)?([1-3])(?:번)?\s+([0-9만천kK,]+|올인|all)$/i);
+    // 패턴 매칭: "1번 3000", "1 5000", "2번 올인", "3번 1만", "1번 5천", "2번 1억", "3 1조", "/배팅 1 3000" 등
+    const match = trimmed.match(/^(?:\/배팅\s+|\/bet\s+)?([1-3])(?:번)?\s+([0-9만천억조경kK,.]+|올인|all)$/i);
     if (!match) return false;
 
     const horseId = parseInt(match[1], 10);
@@ -605,9 +645,15 @@ function initHorseRace(bot, helpers) {
     if (rawAmount === '올인' || rawAmount === 'all') {
       isAllIn = true;
     } else {
-      // 단위 변환: 만, 천, k 처리
+      // 단위 변환: 경, 조, 억, 만, 천, k 처리
       let numStr = rawAmount.replace(/,/g, '');
-      if (numStr.endsWith('만')) {
+      if (numStr.endsWith('경')) {
+        amount = Math.floor(parseFloat(numStr.replace('경', '')) * 1e16);
+      } else if (numStr.endsWith('조')) {
+        amount = Math.floor(parseFloat(numStr.replace('조', '')) * 1e12);
+      } else if (numStr.endsWith('억')) {
+        amount = Math.floor(parseFloat(numStr.replace('억', '')) * 1e8);
+      } else if (numStr.endsWith('만')) {
         amount = Math.floor(parseFloat(numStr.replace('만', '')) * 10000);
       } else if (numStr.endsWith('천') || numStr.endsWith('k')) {
         amount = Math.floor(parseFloat(numStr.replace(/[천k]/g, '')) * 1000);

@@ -170,6 +170,46 @@ function saveWallets() {
   } catch (e) {}
 }
 
+function formatKoreanNumber(val) {
+  if (val === undefined || val === null) return '0';
+  let isNegative = false;
+  let str = String(val).trim();
+  if (str.startsWith('-')) {
+    isNegative = true;
+    str = str.slice(1);
+  }
+  try {
+    let bn = BigInt(str);
+    if (bn === 0n) return '0';
+    if (bn < 10000n) return (isNegative ? '-' : '') + bn.toLocaleString();
+
+    const units = [
+      { val: 10n ** 16n, name: '경' },
+      { val: 10n ** 12n, name: '조' },
+      { val: 10n ** 8n, name: '억' },
+      { val: 10n ** 4n, name: '만' }
+    ];
+
+    for (const u of units) {
+      if (bn >= u.val) {
+        const quotient = bn / u.val;
+        const remainder = bn % u.val;
+        const decimalDigit = Number((remainder * 10n) / u.val);
+        let res = '';
+        if (quotient < 100n && decimalDigit > 0) {
+          res = `${quotient.toLocaleString()}.${decimalDigit}${u.name}`;
+        } else {
+          res = `${quotient.toLocaleString()}${u.name}`;
+        }
+        return (isNegative ? '-' : '') + res;
+      }
+    }
+  } catch (e) {}
+
+  const num = Number(val);
+  return (isNegative ? '-' : '') + (isNaN(num) ? '0' : num.toLocaleString());
+}
+
 function getWallet(userId, name) {
   if (!wallets[userId]) {
     wallets[userId] = {
@@ -365,7 +405,8 @@ const { handleRace, handleTextBet, races } = initHorseRace(bot, {
   getWallet,
   saveWallets,
   checkAndUnlockTitles,
-  getGameActionButtons
+  getGameActionButtons,
+  formatKoreanNumber
 });
 
 // ==========================================
@@ -488,7 +529,7 @@ function handleWallet(ctx) {
   const user = ctx.from;
   const name = user.first_name + (user.last_name ? ' ' + user.last_name : '');
   const w = getWallet(user.id, name);
-  return ctx.reply(`💰 **${w.name}** 님의 지갑\n잔액: **${w.points.toLocaleString()} P**`, {
+  return ctx.reply(`💰 **${w.name}** 님의 지갑\n잔액: **${formatKoreanNumber(w.points)} P**`, {
     parse_mode: 'Markdown',
     ...getGameActionButtons()
   });
@@ -501,7 +542,7 @@ function handleBeg(ctx) {
   const now = Date.now();
 
   if (w.points >= 5000) {
-    return ctx.reply(`🙄 아직 ${w.points.toLocaleString()} P나 있으면서 구걸을 하시게요? 5,000 P 미만일 때만 가능합니다!`);
+    return ctx.reply(`🙄 아직 ${formatKoreanNumber(w.points)} P나 있으면서 구걸을 하시게요? 5,000 P 미만일 때만 가능합니다!`);
   }
 
   if (now - w.lastBeg < 10000) {
@@ -514,7 +555,7 @@ function handleBeg(ctx) {
   w.begCount = (w.begCount || 0) + 1;
   checkAndUnlockTitles(w);
   saveWallets();
-  return ctx.reply(`🧹 탕비실 분리수거 알바 완료! **+5,000 P** 충전되었습니다.\n현재 잔액: **${w.points.toLocaleString()} P**`, {
+  return ctx.reply(`🧹 탕비실 분리수거 알바 완료! **+5,000 P** 충전되었습니다.\n현재 잔액: **${formatKoreanNumber(w.points)} P**`, {
     parse_mode: 'Markdown',
     ...getGameActionButtons()
   });
@@ -529,7 +570,7 @@ function handleRank(ctx) {
     if (idx === 0) medal = '🥇 1등';
     else if (idx === 1) medal = '🥈 2등';
     else if (idx === 2) medal = '🥉 3등';
-    return `${medal}: **${w.name}** — ${w.points.toLocaleString()} P`;
+    return `${medal}: **${w.name}** — ${formatKoreanNumber(w.points)} P`;
   }).join('\n');
 
   return ctx.reply(`🏆 **[사내 부자 랭킹 TOP 10]** 🏆\n\n${lines}`, {
@@ -551,7 +592,7 @@ bot.action('cmd_wallet', async (ctx) => {
   const user = ctx.from;
   const name = user.first_name + (user.last_name ? ' ' + user.last_name : '');
   const w = getWallet(user.id, name);
-  const popupText = `💰 [내 지갑 정보]\n👤 ${w.name} 님\n잔액: ${w.points.toLocaleString()} P`;
+  const popupText = `💰 [내 지갑 정보]\n👤 ${w.name} 님\n잔액: ${formatKoreanNumber(w.points)} P`;
   return ctx.answerCbQuery(popupText, { show_alert: true });
 });
 
@@ -562,7 +603,7 @@ bot.action('cmd_beg', async (ctx) => {
   const now = Date.now();
 
   if (w.points >= 5000) {
-    return ctx.answerCbQuery(`🙄 알바 불가!\n잔액이 5,000 P 이상이면 알바를 할 수 없습니다.\n(현재 잔액: ${w.points.toLocaleString()} P)`, { show_alert: true });
+    return ctx.answerCbQuery(`🙄 알바 불가!\n잔액이 5,000 P 이상이면 알바를 할 수 없습니다.\n(현재 잔액: ${formatKoreanNumber(w.points)} P)`, { show_alert: true });
   }
 
   if (now - w.lastBeg < 10000) {
@@ -575,7 +616,7 @@ bot.action('cmd_beg', async (ctx) => {
   w.begCount = (w.begCount || 0) + 1;
   checkAndUnlockTitles(w);
   saveWallets();
-  return ctx.answerCbQuery(`🧹 탕비실 분리수거 알바 완료! (+5,000 P)\n현재 잔액: ${w.points.toLocaleString()} P`, { show_alert: true });
+  return ctx.answerCbQuery(`🧹 탕비실 분리수거 알바 완료! (+5,000 P)\n현재 잔액: ${formatKoreanNumber(w.points)} P`, { show_alert: true });
 });
 
 bot.action('cmd_rank', async (ctx) => {
@@ -588,7 +629,7 @@ bot.action('cmd_rank', async (ctx) => {
     if (idx === 0) medal = '🥇 1등';
     else if (idx === 1) medal = '🥈 2등';
     else if (idx === 2) medal = '🥉 3등';
-    return `${medal}: **${w.name}** — ${w.points.toLocaleString()} P`;
+    return `${medal}: **${w.name}** — ${formatKoreanNumber(w.points)} P`;
   }).join('\n');
 
   return ctx.reply(`🏆 **[사내 부자 랭킹 TOP 10]** 🏆\n\n${lines}`, {
