@@ -3,485 +3,899 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>🎮 사내 올인원 게임 플랫폼 (Race & Aviator)</title>
+  <title>2026_Q4_부서별_목표달성_지표_종합보고서.xlsx - Excel</title>
   <style>
-    :root {
-      --bg-dark: #0f172a;
-      --card-bg: #1e293b;
-      --border-color: #334155;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --accent-red: #ef4444;
-      --accent-green: #10b981;
-      --accent-yellow: #f59e0b;
-      --text-main: #f8fafc;
-      --text-sub: #94a3b8;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", "Malgun Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f3f2f1;
+      color: #212121;
+      font-size: 11px;
+    }
+    #appContainer {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: relative;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+    /* 엑셀 녹색 타이틀바 */
+    .excel-header {
+      background: #107c41;
+      color: #ffffff;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .excel-title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .excel-window-btns {
+      display: flex;
+      gap: 12px;
+      font-family: monospace;
+      color: #e1dfdd;
+      flex-shrink: 0;
+    }
 
-    /* 헤더 네비게이션 */
-    header {
-      background-color: var(--card-bg);
-      border-bottom: 1px solid var(--border-color);
-      padding: 12px 20px;
+    /* 리본 탭 (상단 메뉴 바) */
+    .ribbon-tabs {
+      background: #107c41;
+      display: flex;
+      gap: 2px;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+    .ribbon-tab {
+      color: #ffffff;
+      padding: 5px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      outline: none;
+    }
+    .ribbon-tab.active {
+      background: #f3f2f1;
+      color: #107c41;
+      font-weight: 600;
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* 수식 입력줄 (Formula Bar) */
+    .formula-bar {
+      background: #ffffff;
+      border-bottom: 1px solid #d2d0ce;
+      display: flex;
+      align-items: center;
+      padding: 3px 8px;
+      gap: 6px;
+      font-family: Consolas, monospace;
+      flex-shrink: 0;
+    }
+    .cell-name-box {
+      border: 1px solid #e1dfdd;
+      padding: 2px 6px;
+      font-size: 11px;
+      min-width: 50px;
+      text-align: center;
+      background: #faf9f8;
+      color: #323130;
+      font-weight: 600;
+    }
+    .fx-icon {
+      color: #605e5c;
+      font-style: italic;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 0 4px;
+    }
+    .formula-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 11px;
+      color: #201f1e;
+      background: transparent;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 탭 본문 뷰 영역 */
+    .tab-view {
+      display: none;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      flex-direction: column;
+    }
+    .tab-view.active {
+      display: flex;
+    }
+
+    /* 📊 1. 엑셀 세로 달리기 시트 뷰 */
+    .excel-sheet-viewport {
+      position: relative;
+      flex: 1;
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    canvas#raceCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 💖 응원 이모지 오버레이 */
+    .reaction-overlay {
+      position: absolute;
+      bottom: 145px;
+      right: 16px;
+      width: 140px;
+      height: 280px;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 50;
+    }
+    .floating-reaction {
+      position: absolute;
+      bottom: 0;
+      font-size: 26px;
+      animation: floatUp 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+    }
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(0) scale(0.6); }
+      15% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+      80% { opacity: 0.9; transform: translateY(-200px) scale(1); }
+      100% { opacity: 0; transform: translateY(-260px) scale(0.8); }
+    }
+
+    /* 하단 실시간 배팅 콘솔 */
+    .betting-control-bar {
+      background: #f8f9fa;
+      border-top: 2px solid #107c41;
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex-shrink: 0;
+      height: 145px;
+      box-sizing: border-box;
+      z-index: 40;
+    }
+    .bet-header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      font-size: 11px;
     }
-    .brand { font-size: 1.2rem; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 8px; }
-    .user-pill {
-      background: #0f172a;
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 6px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.9rem;
+    .user-point-badge {
+      background: #eef8f1;
+      color: #107c41;
+      border: 1px solid #107c41;
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-family: Consolas, monospace;
     }
-    .user-pill .points { color: #facc15; font-weight: bold; }
-
-    /* 탭 메뉴 */
-    .nav-tabs {
-      display: flex;
-      background: #111827;
-      border-bottom: 1px solid var(--border-color);
-      padding: 0 10px;
-      gap: 5px;
-    }
-    .tab-btn {
-      padding: 12px 18px;
-      background: none;
-      border: none;
-      color: var(--text-sub);
-      font-size: 0.95rem;
-      font-weight: 600;
+    .btn-beg {
+      background: #fff4ce;
+      color: #795e00;
+      border: 1px solid #fed966;
+      padding: 2px 7px;
+      font-size: 10px;
+      border-radius: 10px;
+      font-weight: bold;
       cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      color: var(--text-main);
-      border-bottom-color: var(--primary);
-      background: rgba(59, 130, 246, 0.1);
+      margin-left: 5px;
     }
 
-    /* 메인 컨테이너 */
-    main {
-      flex: 1;
-      padding: 16px;
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
+    /* 3마리 세로 레인 배팅 카드 */
+    .bet-cards-row {
       display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 16px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
     }
-    @media (max-width: 860px) {
-      main { grid-template-columns: 1fr; }
-    }
-
-    .game-section { display: none; }
-    .game-section.active { display: flex; flex-direction: column; gap: 16px; }
-
-    /* 카드 스타일 */
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    /* 경마 경기장 */
-    .track-container {
-      background: #090d16;
-      border: 2px solid #22c55e33;
-      border-radius: 8px;
-      padding: 14px;
+    .bet-card-btn {
+      background: #ffffff;
+      border: 1px solid #d2d0ce;
+      border-radius: 4px;
+      padding: 5px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      align-items: center;
+      gap: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
-    .lane {
+    .bet-card-title {
+      font-weight: bold;
+      font-size: 11px;
       display: flex;
       align-items: center;
-      position: relative;
-      background: #1e293b80;
-      border-radius: 8px;
-      padding: 8px 12px;
-      overflow: hidden;
+      gap: 3px;
     }
-    .lane-info {
-      width: 140px;
-      font-size: 0.85rem;
+    .bet-card-odds {
+      color: #d83b01;
+      font-weight: bold;
+      font-size: 10px;
+    }
+    .bet-input-wrap {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      z-index: 2;
+      gap: 2px;
+      width: 100%;
+      margin-top: 3px;
     }
-    .lane-track {
-      flex: 1;
-      position: relative;
-      height: 36px;
-      background: repeating-linear-gradient(90deg, #334155 0, #334155 2px, transparent 2px, transparent 40px);
-      display: flex;
-      align-items: center;
+    .bet-input {
+      width: 100%;
+      border: 1px solid #d2d0ce;
+      padding: 3px 4px;
+      font-size: 10px;
+      border-radius: 2px;
+      outline: none;
+      font-family: Consolas, monospace;
     }
-    .animal-runner {
-      position: absolute;
-      left: 0;
-      font-size: 1.6rem;
-      transition: left 0.4s ease-out;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    .btn-allin {
+      background: #fed9cc;
+      color: #d83b01;
+      border: 1px solid #f8c2b0;
+      font-size: 9px;
+      padding: 2px 4px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-weight: bold;
     }
-    .finish-gate {
-      position: absolute;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: #ef4444;
-      box-shadow: 0 0 8px #ef4444;
+    .btn-bet-confirm {
+      width: 100%;
+      background: #107c41;
+      color: white;
+      border: none;
+      padding: 4px;
+      border-radius: 2px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 2px;
     }
 
-    /* 에비에이터 비행 화면 */
-    .aviator-screen {
-      background: #020617;
-      border: 2px solid #38bdf833;
+    /* 응원 바 */
+    .reaction-bar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding-top: 2px;
+    }
+    .reaction-emoji-btn {
+      background: #ffffff;
+      border: 1px solid #e1dfdd;
       border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .chat-inline-input {
+      flex: 1;
+      border: 1px solid #d2d0ce;
+      border-radius: 12px;
+      padding: 3px 8px;
+      font-size: 10px;
+      outline: none;
+    }
+
+    /* 🚀 2. 엑셀 스킨 Aviator 뷰 */
+    .aviator-view-container {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #ffffff;
+      flex: 1;
+    }
+    .excel-chart-box {
+      border: 1px solid #d2d0ce;
+      background: #faf9f8;
+      border-radius: 4px;
       height: 320px;
       position: relative;
-      overflow: hidden;
       display: flex;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
-    .flight-multiplier {
-      font-size: 4rem;
-      font-weight: 900;
-      color: #38bdf8;
-      text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-      z-index: 5;
-    }
-    .flight-multiplier.crashed {
-      color: var(--accent-red);
-      text-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
-    }
-    .plane-icon {
+    .excel-grid-lines {
       position: absolute;
-      font-size: 3rem;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-size: 30px 30px;
+      background-image: 
+        linear-gradient(to right, #edebe9 1px, transparent 1px),
+        linear-gradient(to bottom, #edebe9 1px, transparent 1px);
+    }
+    .aviator-multiplier-excel {
+      font-size: 3.5rem;
+      font-weight: bold;
+      color: #107c41;
+      z-index: 10;
+      font-family: Consolas, monospace;
+    }
+    .aviator-multiplier-excel.crashed {
+      color: #a80000;
+    }
+    .flight-plane-excel {
+      position: absolute;
+      font-size: 2.5rem;
       transition: all 0.1s linear;
-      z-index: 4;
+      z-index: 8;
     }
 
-    /* 배팅 콘솔 */
-    .bet-panel {
+    /* 엑셀 하단 시트 탭 바 */
+    .sheet-tab-bar {
+      background: #f3f2f1;
+      border-top: 1px solid #d2d0ce;
       display: flex;
-      flex-direction: column;
-      gap: 12px;
+      align-items: center;
+      padding: 2px 8px;
+      gap: 2px;
+      font-size: 11px;
+      flex-shrink: 0;
     }
-    .bet-options {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-      gap: 8px;
-    }
-    .btn {
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: none;
-      font-weight: 600;
+    .sheet-tab {
+      padding: 4px 14px;
+      background: #e1dfdd;
+      color: #323130;
+      border: 1px solid #d2d0ce;
+      border-bottom: none;
       cursor: pointer;
-      transition: background 0.2s;
+      border-radius: 2px 2px 0 0;
     }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-cashout { background: var(--accent-yellow); color: #000; font-size: 1.2rem; font-weight: 800; padding: 14px; }
-    .btn-cashout:hover { background: #eab308; }
-    .btn-danger { background: var(--accent-red); color: white; }
-    .btn-secondary { background: #334155; color: white; }
-
-    /* 우측 사이드바: 실시간 채팅 & 랭킹 */
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .chat-box {
-      flex: 1;
-      height: 380px;
-      display: flex;
-      flex-direction: column;
-    }
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      font-size: 0.85rem;
-    }
-    .chat-msg {
-      background: #0f172a80;
-      padding: 6px 10px;
-      border-radius: 6px;
-    }
-    .chat-msg .author { font-weight: bold; color: #38bdf8; }
-    .chat-msg .time { font-size: 0.75rem; color: var(--text-sub); margin-left: 6px; }
-    .chat-input-bar {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-    }
-    .chat-input-bar input {
-      flex: 1;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border-color);
-      background: #0f172a;
-      color: white;
-      outline: none;
+    .sheet-tab.active {
+      background: #ffffff;
+      color: #107c41;
+      font-weight: bold;
+      border-top: 2px solid #107c41;
     }
   </style>
 </head>
 <body>
 
-  <!-- 상단 네비게이션 -->
-  <header>
-    <div class="brand">
-      <span>🚀</span>
-      <span>사내 올인원 웹 아케이드</span>
-    </div>
-    <div class="user-pill">
-      <span id="userName">플레이어</span>
-      <span class="points" id="userPoints">0 P</span>
-      <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="requestBeg()">🧹 알바</button>
-    </div>
-  </header>
-
-  <!-- 탭 네비게이션 -->
-  <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('race')">🏇 동물 달리기</button>
-    <button class="tab-btn" onclick="switchTab('aviator')">🚀 Aviator 비행기</button>
-    <button class="tab-btn" onclick="switchTab('ranking')">🏆 부자 랭킹</button>
-    <button class="tab-btn" onclick="switchTab('titles')">🎖️ 내 칭호</button>
-  </div>
-
-  <!-- 메인 게임 영역 -->
-  <main>
-    <div class="content-area">
-
-      <!-- 1. 경마 레이스 탭 -->
-      <section id="tab-race" class="game-section active">
-        <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 id="raceTitle">🎪 제 --회 동물 달리기</h2>
-            <span id="raceStatusBadge" style="padding: 4px 10px; border-radius: 12px; background: #3b82f6; font-size: 0.85rem;">배팅 중</span>
-          </div>
-
-          <!-- 트랙 -->
-          <div class="track-container" id="raceTrack">
-            <!-- 동적 레인 렌더링 -->
-          </div>
-        </div>
-
-        <!-- 경마 배팅 패널 -->
-        <div class="card bet-panel">
-          <h3>💰 레이스 배팅</h3>
-          <div id="horseBetButtons" style="display: flex; gap: 8px;"></div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="number" id="raceBetAmount" placeholder="배팅 금액 (예: 50000)" style="flex: 1; padding: 10px; border-radius: 6px; background: #0f172a; border: 1px solid var(--border-color); color: white;">
-            <button class="btn btn-secondary" onclick="setBetAmount('race', 10000)">+1만</button>
-            <button class="btn btn-secondary" onclick="setBetAmount('race', 100000)">+10만</button>
-            <button class="btn btn-danger" onclick="setAllIn('race')">올인</button>
-          </div>
-          <button class="btn btn-primary" onclick="submitRaceBet()">배팅 완료</button>
-        </div>
-      </section>
-
-      <!-- 2. 에비에이터 탭 -->
-      <section id="tab-aviator" class="game-section">
-        <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 id="flightTitle">🚀 제 --편 Aviator 비행</h2>
-            <span id="flightStatusBadge" style="padding: 4px 10px; border-radius: 12px; background: #3b82f6; font-size: 0.85rem;">탑승 수속 중</span>
-          </div>
-
-          <div class="aviator-screen" id="aviatorScreen">
-            <div class="flight-multiplier" id="aviatorMultiplier">1.00x</div>
-            <div class="plane-icon" id="planeIcon" style="bottom: 20px; left: 20px;">✈️</div>
-          </div>
-        </div>
-
-        <div class="card bet-panel">
-          <button id="cashOutBtn" class="btn btn-cashout" style="display: none;" onclick="submitCashOut()">🪂 지금 탈출하기!</button>
-          
-          <div id="aviatorBetControls">
-            <h3>💰 비행기 탑승권 구매</h3>
-            <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
-              <input type="number" id="aviatorBetAmount" placeholder="탑승 금액 (예: 50000)" style="flex: 1; padding: 10px; border-radius: 6px; background: #0f172a; border: 1px solid var(--border-color); color: white;">
-              <button class="btn btn-secondary" onclick="setBetAmount('aviator', 10000)">+1만</button>
-              <button class="btn btn-secondary" onclick="setBetAmount('aviator', 100000)">+10만</button>
-              <button class="btn btn-danger" onclick="setAllIn('aviator')">올인</button>
-            </div>
-            <button class="btn btn-primary" style="margin-top: 10px; width: 100%;" onclick="submitAviatorBet()">탑승 수속 (배팅)</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. 랭킹 탭 -->
-      <section id="tab-ranking" class="game-section">
-        <div class="card">
-          <h2>🏆 사내 부자 랭킹 TOP 10</h2>
-          <div id="rankingList" style="margin-top: 16px; display: flex; flex-direction: column; gap: 10px;"></div>
-        </div>
-      </section>
-
-      <!-- 4. 내 칭호 탭 -->
-      <section id="tab-titles" class="game-section">
-        <div class="card">
-          <h2>🎖️ 맞춤 칭호 도감</h2>
-          <div id="titleList" style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;"></div>
-        </div>
-      </section>
-
+  <div id="appContainer">
+    <!-- 1. 엑셀 상단 타이틀 바 -->
+    <div class="excel-header">
+      <div class="excel-title">
+        <span>📊</span>
+        <span>2026_Q4_부서별_목표달성_지표_종합보고서.xlsx - Excel</span>
+      </div>
+      <div class="excel-window-btns">
+        <span>─</span>
+        <span>□</span>
+        <span>✕</span>
+      </div>
     </div>
 
-    <!-- 우측 실시간 채팅 & 공지 -->
-    <aside class="sidebar">
-      <div class="card chat-box">
-        <h3>💬 실시간 사내 라운지</h3>
-        <div class="chat-messages" id="chatMessages">
-          <div class="chat-msg">
-            <span class="author">시스템</span>: <span>웹 플랫폼에 접속했습니다!</span>
+    <!-- 2. 리본 탭 -->
+    <div class="ribbon-tabs">
+      <button class="ribbon-tab active" onclick="switchMainTab('race')">파일</button>
+      <button class="ribbon-tab" onclick="switchMainTab('race')">홈 (경마 시트)</button>
+      <button class="ribbon-tab" onclick="switchMainTab('aviator')">삽입 (비행기 지표)</button>
+      <button class="ribbon-tab" onclick="switchMainTab('ranking')">데이터 (사내 랭킹)</button>
+      <button class="ribbon-tab" onclick="switchMainTab('titles')">검토 (칭호 도감)</button>
+    </div>
+
+    <!-- 3. 수식 입력줄 -->
+    <div class="formula-bar">
+      <div class="cell-name-box" id="cellNameBox">C15</div>
+      <div class="fx-icon">fx</div>
+      <div class="formula-input" id="formulaInput">=SUM(D4:D18) * 1.8 [자동 데이터 집계 프로세스 동작 중]</div>
+    </div>
+
+    <!-- 4. 탭 본문 영역 -->
+
+    <!-- [TAB 1] 📊 세로 엑셀 동물 달리기 -->
+    <div id="view-race" class="tab-view active">
+      <div class="excel-sheet-viewport" id="viewport">
+        <canvas id="raceCanvas"></canvas>
+        <div class="reaction-overlay" id="reactionOverlay"></div>
+      </div>
+
+      <!-- 하단 실시간 배팅 바 -->
+      <div class="betting-control-bar">
+        <div class="bet-header-row">
+          <div>
+            <strong>💼 직원 자산:</strong>
+            <span class="user-point-badge" id="userPointsDisplay">0 P</span>
+            <button class="btn-beg" onclick="requestBeg()">🧹 탕비실 알바 (+5만)</button>
+          </div>
+          <div style="color: #605e5c; font-size: 10px;" id="raceCountTimer">
+            ⏱️ 배팅 마감 카운트다운
           </div>
         </div>
-        <div class="chat-input-bar">
-          <input type="text" id="chatInput" placeholder="응원 메시지 입력..." onkeydown="if(event.key==='Enter') sendChat()">
-          <button class="btn btn-primary" onclick="sendChat()">전송</button>
+
+        <!-- 3마리 세로 레인 배팅 카드 -->
+        <div class="bet-cards-row" id="betCardsContainer">
+          <!-- 동적 렌더링 -->
+        </div>
+
+        <!-- 하단 실시간 응원 및 챗 -->
+        <div class="reaction-bar-row">
+          <div style="display: flex; gap: 4px;">
+            <button class="reaction-emoji-btn" onclick="sendReaction('🔥')">🔥</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('👏')">👏</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🚀')">🚀</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('💸')">💸</button>
+          </div>
+          <input type="text" id="chatMsgInput" class="chat-inline-input" placeholder="사내 응원 메시지 입력 후 Enter" onkeydown="if(event.key==='Enter') sendChatMessage()">
         </div>
       </div>
-    </aside>
-  </main>
+    </div>
+
+    <!-- [TAB 2] 🚀 엑셀 스타일 Aviator 비행기 -->
+    <div id="view-aviator" class="tab-view">
+      <div class="aviator-view-container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="color: #107c41;">📈 실시간 물류 가속 곡선 분석 지표 (Aviator)</h3>
+          <span id="flightBadge" style="padding: 2px 8px; border-radius: 4px; background: #eef8f1; color: #107c41; font-weight: bold;">탑승 수속 중</span>
+        </div>
+
+        <div class="excel-chart-box">
+          <div class="excel-grid-lines"></div>
+          <div class="aviator-multiplier-excel" id="aviatorMult">1.00x</div>
+          <div class="flight-plane-excel" id="excelPlane" style="bottom: 20px; left: 20px;">✈️</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="number" id="aviatorInput" placeholder="탑승 배팅금 (예: 50000)" style="flex: 1; padding: 8px; border: 1px solid #d2d0ce; border-radius: 2px; font-family: Consolas, monospace;">
+          <button style="background: #107c41; color: white; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 2px;" onclick="submitAviatorBet()">탑승권 구매</button>
+          <button id="excelCashoutBtn" style="background: #d83b01; color: white; border: none; padding: 8px 20px; font-weight: bold; cursor: pointer; border-radius: 2px; display: none;" onclick="submitCashOut()">🪂 탈출 (익절)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- [TAB 3] 🏆 사내 부자 랭킹 -->
+    <div id="view-ranking" class="tab-view" style="padding: 20px; background: #ffffff;">
+      <h3 style="color: #107c41; margin-bottom: 12px;">🏆 사내 부자 랭킹 TOP 10</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+        <thead>
+          <tr style="background: #f3f2f1; border-bottom: 2px solid #107c41; text-align: left;">
+            <th style="padding: 8px;">순위</th>
+            <th style="padding: 8px;">직원명</th>
+            <th style="padding: 8px;">장착 칭호</th>
+            <th style="padding: 8px; text-align: right;">보유 포인트</th>
+          </tr>
+        </thead>
+        <tbody id="rankingTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- [TAB 4] 🎖️ 맞춤 칭호 도감 -->
+    <div id="view-titles" class="tab-view" style="padding: 20px; background: #ffffff;">
+      <h3 style="color: #107c41; margin-bottom: 12px;">🎖️ 사내 맞춤 칭호 도감</h3>
+      <div id="titlesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;"></div>
+    </div>
+
+    <!-- 5. 엑셀 하단 시트 탭 바 -->
+    <div class="sheet-tab-bar">
+      <div class="sheet-tab active" id="sheetTab-race" onclick="switchMainTab('race')">Sheet1_경마달리기</div>
+      <div class="sheet-tab" id="sheetTab-aviator" onclick="switchMainTab('aviator')">Sheet2_비행가속곡선</div>
+      <div class="sheet-tab" id="sheetTab-ranking" onclick="switchMainTab('ranking')">Sheet3_사내랭킹</div>
+      <div class="sheet-tab" id="sheetTab-titles" onclick="switchMainTab('titles')">Sheet4_칭호도감</div>
+      <span style="color: #605e5c; margin-left: 10px;">Ready | 100% ⊞</span>
+    </div>
+  </div>
 
   <script>
-    // 유저 초기 세션 (로컬 스토리지 유지)
-    let currentUserId = localStorage.getItem('spyfall_user_id') || ('user_' + Math.floor(Math.random() * 90000 + 10000));
-    let currentUserName = localStorage.getItem('spyfall_user_name') || prompt('사용하실 사내 닉네임을 입력해주세요:', '직원_' + currentUserId.slice(-4)) || '익명';
-    localStorage.setItem('spyfall_user_id', currentUserId);
-    localStorage.setItem('spyfall_user_name', currentUserName);
-
-    document.getElementById('userName').innerText = currentUserName;
+    // 유저 계정 정보 유지
+    let currentUserId = localStorage.getItem('excel_user_id') || ('user_' + Math.floor(Math.random() * 90000 + 10000));
+    let currentUserName = localStorage.getItem('excel_user_name') || prompt('사용하실 사내 닉네임을 입력해주세요:', '직원_' + currentUserId.slice(-4)) || '익명';
+    localStorage.setItem('excel_user_id', currentUserId);
+    localStorage.setItem('excel_user_name', currentUserName);
 
     let userWallet = { points: 0 };
-    let currentRaceState = null;
-    let selectedHorseId = 1;
-    let currentFlightState = null;
-    let hasAviatorBet = false;
+    let currentRace = null;
+    let isRacing = false;
+    let raceStartTime = null;
+    let raceTimeline = [];
+    let raceTotalDuration = 12;
+
+    // 캔버스 세로 엑셀 레이서 렌더러
+    const canvas = document.getElementById('raceCanvas');
+    const ctx = canvas.getContext('2d');
+    let viewW = 0, viewH = 0;
+
+    const ROW_H = 26;
+    const HEADER_H = 28;
+    const ROW_HEADER_W = 38;
+    const TOTAL_ROWS = 15;
+
+    function resizeCanvas() {
+      const vp = document.getElementById('viewport');
+      if (!vp) return;
+      viewW = vp.clientWidth;
+      viewH = vp.clientHeight;
+      canvas.width = viewW;
+      canvas.height = viewH;
+      drawExcelSheet();
+    }
+    window.addEventListener('resize', resizeCanvas);
 
     // WebSocket 연결
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${window.location.host}`);
 
     ws.onopen = () => {
-      console.log('WS connected');
       loadWallet();
+      resizeCanvas();
     };
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      handleWsEvent(msg.event, msg.data);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      handleEvent(msg.event, msg.data);
     };
 
-    function handleWsEvent(event, data) {
-      // 1. 초기 상태 동기화
-      if (event === 'init_state') {
-        if (data.race) updateRaceUI(data.race);
-        if (data.aviator) updateAviatorUI(data.aviator);
+    function handleEvent(event, data) {
+      if (event === 'excel_race_created' || (event === 'init_state' && data.race)) {
+        currentRace = data.race || data;
+        setupRace(currentRace);
       }
-
-      // 2. 경마 이벤트
-      if (event === 'race_created') {
-        updateRaceUI(data);
+      if (event === 'excel_race_started') {
+        startVerticalRace(data.seed, data.durationMs);
       }
-      if (event === 'race_started') {
-        document.getElementById('raceStatusBadge').innerText = '달리는 중! 🔥';
-        document.getElementById('raceStatusBadge').style.background = '#ef4444';
+      if (event === 'excel_race_finished') {
+        finishVerticalRace(data.winner);
       }
-      if (event === 'race_tick') {
-        for (const h of data.horses) {
-          const runner = document.getElementById(`runner-${h.id}`);
-          if (runner) {
-            const pct = Math.min(94, (h.progress / 14) * 94);
-            runner.style.left = `${pct}%`;
-          }
-        }
-      }
-      if (event === 'race_finished') {
-        document.getElementById('raceStatusBadge').innerText = `우승: ${data.winner.emoji} ${data.winner.name}`;
-        loadWallet();
-      }
-
-      // 3. 에비에이터 이벤트
       if (event === 'aviator_boarding') {
-        updateAviatorUI(data);
-        hasAviatorBet = false;
-        document.getElementById('cashOutBtn').style.display = 'none';
-        document.getElementById('aviatorBetControls').style.display = 'block';
+        updateAviatorBoarding(data);
       }
       if (event === 'aviator_takeoff') {
-        document.getElementById('flightStatusBadge').innerText = '비행 중! 💨';
-        document.getElementById('flightStatusBadge').style.background = '#10b981';
-        if (hasAviatorBet) {
-          document.getElementById('cashOutBtn').style.display = 'block';
-          document.getElementById('aviatorBetControls').style.display = 'none';
-        }
+        document.getElementById('flightBadge').innerText = '비행 중! 💨';
+        document.getElementById('flightBadge').style.color = '#107c41';
       }
       if (event === 'aviator_tick') {
-        const multEl = document.getElementById('aviatorMultiplier');
-        multEl.innerText = `${data.multiplier.toFixed(2)}x`;
-        multEl.classList.remove('crashed');
-
-        const plane = document.getElementById('planeIcon');
-        const progress = Math.min(80, (data.multiplier - 1) * 15);
-        plane.style.left = `${20 + progress * 0.7}%`;
-        plane.style.bottom = `${20 + progress * 0.6}%`;
-
-        if (hasAviatorBet) {
-          document.getElementById('cashOutBtn').innerText = `🪂 ${data.multiplier.toFixed(2)}x 탈출하기!`;
-        }
+        updateAviatorTick(data.multiplier);
       }
       if (event === 'aviator_crashed') {
-        const multEl = document.getElementById('aviatorMultiplier');
-        multEl.innerText = `CRASHED (${data.finalMultiplier.toFixed(2)}x)`;
-        multEl.classList.add('crashed');
-        document.getElementById('flightStatusBadge').innerText = '폭발!';
-        document.getElementById('flightStatusBadge').style.background = '#ef4444';
-        document.getElementById('cashOutBtn').style.display = 'none';
-        hasAviatorBet = false;
-        loadWallet();
-      }
-
-      // 4. 채팅
-      if (event === 'chat_message') {
-        appendChat(data.user, data.text, data.time);
+        updateAviatorCrash(data.finalMultiplier);
       }
     }
 
-    // REST API 연동
+    function setupRace(race) {
+      isRacing = false;
+      document.getElementById('raceCountTimer').innerText = '⏱️ 배팅 접수 중 (카운트다운)';
+      renderBetCards(race.horses);
+      drawExcelSheet();
+    }
+
+    function renderBetCards(horses) {
+      const container = document.getElementById('betCardsContainer');
+      container.innerHTML = '';
+      horses.forEach(h => {
+        const card = document.createElement('div');
+        card.className = 'bet-card-btn';
+        card.innerHTML = `
+          <div class="bet-card-title">${h.emoji} <span>${h.name}</span> <span class="bet-card-odds">${h.odds}배</span></div>
+          <div style="font-size: 9px; color: #605e5c;">[${h.dept}]</div>
+          <div class="bet-input-wrap">
+            <input type="number" id="betAmt_${h.id}" class="bet-input" placeholder="배팅액">
+            <button class="btn-allin" onclick="fillAllIn(${h.id})">올인</button>
+          </div>
+          <button class="btn-bet-confirm" onclick="submitHorseBet(${h.id})">배팅</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function fillAllIn(horseId) {
+      document.getElementById(`betAmt_${horseId}`).value = userWallet.points;
+    }
+
+    function submitHorseBet(horseId) {
+      const input = document.getElementById(`betAmt_${horseId}`);
+      const amount = parseInt(input.value, 10);
+      if (!amount || amount <= 0) return alert('배팅 금액을 입력해주세요.');
+
+      ws.send(JSON.stringify({
+        type: 'race_bet',
+        payload: {
+          user: { id: currentUserId, name: currentUserName },
+          horseId,
+          amount,
+          isAllIn: (amount >= userWallet.points)
+        }
+      }));
+      alert(`${horseId}번에 배팅 완료되었습니다!`);
+    }
+
+    // 60FPS 세로 엑셀 달리기 애니메이션
+    function mulberry32(a) {
+      return function() {
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function startVerticalRace(seed, durationMs) {
+      isRacing = true;
+      document.getElementById('raceCountTimer').innerText = '🔥 실시간 하향 집계 주행 중...';
+      raceStartTime = performance.now();
+
+      // 물리 타임라인 재현
+      const rnd = mulberry32(seed);
+      const profiles = currentRace.horses.map(r => ({
+        name: r.name,
+        pos: 0,
+        vel: 0.15,
+        baseSpeed: 1.1 + rnd() * 0.15
+      }));
+
+      raceTimeline = [];
+      const DT = 1 / 60;
+      const MAX_STEPS = 60 * 35;
+      let winnerIdx = -1;
+
+      for (let s = 0; s < MAX_STEPS; s++) {
+        const curTime = s * DT;
+        for (let i = 0; i < 3; i++) {
+          const p = profiles[i];
+          if (p.pos >= 15) continue;
+          let target = p.baseSpeed;
+          if (p.name === '치타') target = curTime < 4.5 ? 2.2 : 0.82;
+          else if (p.name === '경주마') target = 1.25 + Math.sin(curTime * 1.5) * 0.12;
+          else if (p.name === '호랑이' && curTime > 3) target = 1.75;
+          else if (p.name === '늑대' && curTime > 5) target = 1.65;
+          else if (p.name === '거북이' && curTime > 6.5) target = 2.45;
+          else if (p.name === '달팽이' && curTime > 7) target = 2.8;
+          else if (p.name === '새' && curTime > 5) target = 3.0;
+
+          p.vel += (target - p.vel) * 0.08;
+          p.pos += p.vel * DT;
+          if (p.pos >= 15 && winnerIdx === -1) winnerIdx = i;
+        }
+        raceTimeline.push({
+          t: curTime,
+          pos: [profiles[0].pos, profiles[1].pos, profiles[2].pos]
+        });
+        if (winnerIdx !== -1 && curTime > (raceTimeline[raceTimeline.length - 1].t + 0.8)) break;
+      }
+      raceTotalDuration = raceTimeline[raceTimeline.length - 1].t;
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    function renderLoop(now) {
+      if (!isRacing) return;
+      const elapsed = (now - raceStartTime) / 1000;
+      const stepIdx = Math.min(raceTimeline.length - 1, Math.floor(elapsed * 60));
+      const frame = raceTimeline[stepIdx];
+
+      drawExcelSheet(frame ? frame.pos : [0, 0, 0]);
+
+      if (elapsed < raceTotalDuration) {
+        requestAnimationFrame(renderLoop);
+      }
+    }
+
+    function finishVerticalRace(winner) {
+      isRacing = false;
+      document.getElementById('raceCountTimer').innerText = `🏁 1등 통과: ${winner.emoji} ${winner.name} (${winner.odds}배)`;
+      loadWallet();
+    }
+
+    // 엑셀 시트 렌더링 함수
+    function drawExcelSheet(positions = [0, 0, 0]) {
+      if (!ctx || viewW <= 0 || viewH <= 0) return;
+      ctx.clearRect(0, 0, viewW, viewH);
+
+      const laneW = (viewW - ROW_HEADER_W) / 3;
+
+      // 1. 열 헤더 (A, B, C)
+      ctx.fillStyle = '#f3f2f1';
+      ctx.fillRect(0, 0, viewW, HEADER_H);
+      ctx.fillStyle = '#e1dfdd';
+      ctx.fillRect(0, 0, ROW_HEADER_W, HEADER_H);
+
+      ctx.strokeStyle = '#d2d0ce';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0, 0, ROW_HEADER_W, HEADER_H);
+
+      const colLetters = ['B', 'C', 'D'];
+      for (let i = 0; i < 3; i++) {
+        const x = ROW_HEADER_W + i * laneW;
+        ctx.strokeRect(x, 0, laneW, HEADER_H);
+        ctx.fillStyle = '#323130';
+        ctx.font = 'bold 11px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const racer = currentRace ? currentRace.horses[i] : null;
+        const label = racer ? `${colLetters[i]}열 (${racer.emoji} ${racer.name})` : `${colLetters[i]}열`;
+        ctx.fillText(label, x + laneW / 2, HEADER_H / 2);
+      }
+
+      // 2. 세로 1~15 행 그리드
+      for (let r = 0; r < TOTAL_ROWS; r++) {
+        const y = HEADER_H + r * ROW_H;
+
+        // 행 헤더
+        ctx.fillStyle = '#f3f2f1';
+        ctx.fillRect(0, y, ROW_HEADER_W, ROW_H);
+        ctx.strokeStyle = '#d2d0ce';
+        ctx.strokeRect(0, y, ROW_HEADER_W, ROW_H);
+
+        ctx.fillStyle = (r === TOTAL_ROWS - 1) ? '#d83b01' : '#605e5c';
+        ctx.font = (r === TOTAL_ROWS - 1) ? 'bold 10px Consolas' : '10px Consolas';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(r + 1), ROW_HEADER_W / 2, y + ROW_H / 2);
+
+        // 레인 셀
+        for (let c = 0; c < 3; c++) {
+          const x = ROW_HEADER_W + c * laneW;
+          ctx.fillStyle = (r === TOTAL_ROWS - 1) ? '#fff1ec' : '#ffffff';
+          ctx.fillRect(x, y, laneW, ROW_H);
+          ctx.strokeStyle = '#e1dfdd';
+          ctx.strokeRect(x, y, laneW, ROW_H);
+
+          // 결승선 라인
+          if (r === TOTAL_ROWS - 1) {
+            ctx.fillStyle = '#d83b01';
+            ctx.font = 'bold 10px "Segoe UI"';
+            ctx.textAlign = 'right';
+            ctx.fillText('FINISH 🏁', x + laneW - 8, y + ROW_H / 2);
+          }
+        }
+      }
+
+      // 3. 세로로 달리는 동물들 그리기
+      for (let i = 0; i < 3; i++) {
+        const pos = positions[i] || 0;
+        const x = ROW_HEADER_W + i * laneW + laneW / 2;
+        const y = HEADER_H + pos * ROW_H;
+
+        const racer = currentRace ? currentRace.horses[i] : null;
+        if (racer) {
+          ctx.font = '20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(racer.emoji, x, y + ROW_H / 2);
+
+          // 이름 뱃지
+          ctx.font = '9px "Segoe UI"';
+          ctx.fillStyle = '#107c41';
+          ctx.fillText(racer.name, x, y - 2);
+        }
+      }
+    }
+
+    // 이모지 반응
+    function sendReaction(emoji) {
+      const el = document.createElement('div');
+      el.className = 'floating-reaction';
+      el.textContent = emoji;
+      el.style.left = `${Math.random() * 80 + 10}%`;
+      document.getElementById('reactionOverlay').appendChild(el);
+      setTimeout(() => el.remove(), 2300);
+
+      ws.send(JSON.stringify({
+        type: 'chat',
+        payload: { user: { id: currentUserId, name: currentUserName }, text: emoji }
+      }));
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chatMsgInput');
+      const text = input.value.trim();
+      if (!text) return;
+      ws.send(JSON.stringify({
+        type: 'chat',
+        payload: { user: { id: currentUserId, name: currentUserName }, text }
+      }));
+      input.value = '';
+    }
+
+    // 에비에이터 관련
+    function updateAviatorBoarding(data) {
+      document.getElementById('flightBadge').innerText = '탑승 수속 중';
+      document.getElementById('flightBadge').style.color = '#107c41';
+      document.getElementById('aviatorMult').innerText = '1.00x';
+      document.getElementById('aviatorMult').classList.remove('crashed');
+      document.getElementById('excelCashoutBtn').style.display = 'none';
+      const plane = document.getElementById('excelPlane');
+      plane.style.left = '20px';
+      plane.style.bottom = '20px';
+    }
+
+    function updateAviatorTick(mult) {
+      document.getElementById('aviatorMult').innerText = `${mult.toFixed(2)}x`;
+      const progress = Math.min(80, (mult - 1) * 15);
+      const plane = document.getElementById('excelPlane');
+      plane.style.left = `${20 + progress * 0.7}%`;
+      plane.style.bottom = `${20 + progress * 0.6}%`;
+    }
+
+    function updateAviatorCrash(mult) {
+      document.getElementById('aviatorMult').innerText = `CRASHED (${mult.toFixed(2)}x)`;
+      document.getElementById('aviatorMult').classList.add('crashed');
+      document.getElementById('flightBadge').innerText = '폭발!';
+      document.getElementById('flightBadge').style.color = '#a80000';
+      document.getElementById('excelCashoutBtn').style.display = 'none';
+      loadWallet();
+    }
+
+    function submitAviatorBet() {
+      const amount = parseInt(document.getElementById('aviatorInput').value, 10);
+      if (!amount || amount <= 0) return alert('탑승 금액을 입력해주세요.');
+
+      ws.send(JSON.stringify({
+        type: 'aviator_bet',
+        payload: {
+          user: { id: currentUserId, name: currentUserName },
+          amount,
+          isAllIn: (amount >= userWallet.points)
+        }
+      }));
+      document.getElementById('excelCashoutBtn').style.display = 'block';
+      alert('비행기 탑승권 구매 완료!');
+    }
+
+    function submitCashOut() {
+      ws.send(JSON.stringify({
+        type: 'aviator_cashout',
+        payload: { user: { id: currentUserId, name: currentUserName } }
+      }));
+    }
+
+    // 탭 전환
+    function switchMainTab(tabKey) {
+      document.querySelectorAll('.ribbon-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.sheet-tab').forEach(s => s.classList.remove('active'));
+
+      document.getElementById(`view-${tabKey}`).classList.add('active');
+      const sTab = document.getElementById(`sheetTab-${tabKey}`);
+      if (sTab) sTab.classList.add('active');
+
+      if (tabKey === 'race') {
+        setTimeout(resizeCanvas, 50);
+      } else if (tabKey === 'ranking') {
+        loadRanking();
+      } else if (tabKey === 'titles') {
+        loadTitles();
+      }
+    }
+
     async function loadWallet() {
       const res = await fetch(`/api/wallet?userId=${currentUserId}&name=${encodeURIComponent(currentUserName)}`);
       const data = await res.json();
       if (data.ok) {
         userWallet = data.wallet;
-        document.getElementById('userPoints').innerText = `${data.wallet.formattedPoints} P`;
+        document.getElementById('userPointsDisplay').innerText = `${data.wallet.formattedPoints} P`;
       }
     }
 
@@ -500,169 +914,41 @@
       }
     }
 
-    function updateRaceUI(race) {
-      currentRaceState = race;
-      document.getElementById('raceTitle').innerText = `🎪 제 ${race.raceNo}회 대환장 동물 달리기`;
-      document.getElementById('raceStatusBadge').innerText = '배팅 접수 중 (30초)';
-      document.getElementById('raceStatusBadge').style.background = '#3b82f6';
-
-      const track = document.getElementById('raceTrack');
-      track.innerHTML = '';
-      const btnGroup = document.getElementById('horseBetButtons');
-      btnGroup.innerHTML = '';
-
-      race.horses.forEach((h) => {
-        // 레인
-        const lane = document.createElement('div');
-        lane.className = 'lane';
-        lane.innerHTML = `
-          <div class="lane-info">
-            <strong>${h.id}번</strong> ${h.emoji} <span>${h.name}</span> <small>(${h.odds}배)</small>
-          </div>
-          <div class="lane-track">
-            <div class="animal-runner" id="runner-${h.id}">${h.emoji}</div>
-            <div class="finish-gate"></div>
-          </div>
-        `;
-        track.appendChild(lane);
-
-        // 배팅 선택 버튼
-        const b = document.createElement('button');
-        b.className = `btn ${selectedHorseId === h.id ? 'btn-primary' : 'btn-secondary'}`;
-        b.innerText = `${h.id}번 ${h.emoji} (${h.odds}배)`;
-        b.onclick = () => {
-          selectedHorseId = h.id;
-          updateRaceUI(race);
-        };
-        btnGroup.appendChild(b);
-      });
-    }
-
-    function updateAviatorUI(flight) {
-      currentFlightState = flight;
-      document.getElementById('flightTitle').innerText = `🚀 제 ${flight.flightNo}편 Aviator 비행`;
-      document.getElementById('flightStatusBadge').innerText = '탑승 수속 중';
-      document.getElementById('flightStatusBadge').style.background = '#3b82f6';
-      document.getElementById('aviatorMultiplier').innerText = '1.00x';
-      document.getElementById('aviatorMultiplier').classList.remove('crashed');
-      const plane = document.getElementById('planeIcon');
-      plane.style.left = '20px';
-      plane.style.bottom = '20px';
-    }
-
-    function setBetAmount(game, val) {
-      const input = document.getElementById(`${game}BetAmount`);
-      input.value = (parseInt(input.value || 0, 10) + val);
-    }
-
-    function setAllIn(game) {
-      const input = document.getElementById(`${game}BetAmount`);
-      input.value = userWallet.points;
-    }
-
-    function submitRaceBet() {
-      const amount = parseInt(document.getElementById('raceBetAmount').value, 10);
-      if (!amount || amount <= 0) return alert('배팅 금액을 입력해주세요.');
-
-      ws.send(JSON.stringify({
-        type: 'race_bet',
-        payload: {
-          user: { id: currentUserId, name: currentUserName },
-          horseId: selectedHorseId,
-          amount,
-          isAllIn: (amount >= userWallet.points)
-        }
-      }));
-      alert(`${selectedHorseId}번에 배팅이 완료되었습니다!`);
-    }
-
-    function submitAviatorBet() {
-      const amount = parseInt(document.getElementById('aviatorBetAmount').value, 10);
-      if (!amount || amount <= 0) return alert('탑승 금액을 입력해주세요.');
-
-      ws.send(JSON.stringify({
-        type: 'aviator_bet',
-        payload: {
-          user: { id: currentUserId, name: currentUserName },
-          amount,
-          isAllIn: (amount >= userWallet.points)
-        }
-      }));
-      hasAviatorBet = true;
-      alert('비행기 탑승권 구매가 완료되었습니다!');
-    }
-
-    function submitCashOut() {
-      ws.send(JSON.stringify({
-        type: 'aviator_cashout',
-        payload: { user: { id: currentUserId, name: currentUserName } }
-      }));
-    }
-
-    function sendChat() {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
-      ws.send(JSON.stringify({
-        type: 'chat',
-        payload: { user: { id: currentUserId, name: currentUserName }, text }
-      }));
-      input.value = '';
-    }
-
-    function appendChat(author, text, time) {
-      const box = document.getElementById('chatMessages');
-      const el = document.createElement('div');
-      el.className = 'chat-msg';
-      el.innerHTML = `<span class="author">${author}</span>: <span>${text}</span> <span class="time">${time}</span>`;
-      box.appendChild(el);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById(`tab-${tabId}`).classList.add('active');
-
-      if (tabId === 'ranking') loadRanking();
-      if (tabId === 'titles') loadTitles();
-    }
-
     async function loadRanking() {
       const res = await fetch('/api/ranking');
       const data = await res.json();
-      const list = document.getElementById('rankingList');
-      list.innerHTML = '';
+      const body = document.getElementById('rankingTableBody');
+      body.innerHTML = '';
       data.rankings.forEach((r, idx) => {
-        const item = document.createElement('div');
-        item.style.padding = '10px';
-        item.style.background = '#0f172a';
-        item.style.borderRadius = '8px';
-        item.style.display = 'flex';
-        item.style.justifyContent = 'space-between';
-        item.innerHTML = `<span><strong>${idx + 1}등</strong> ${r.name} <small style="color:#60a5fa;">[${r.activeTitle || '일반'}]</small></span> <strong style="color:#facc15;">${r.formattedPoints} P</strong>`;
-        list.appendChild(item);
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #edebe9';
+        tr.innerHTML = `
+          <td style="padding: 8px;"><strong>${idx + 1}</strong></td>
+          <td style="padding: 8px;">${r.name}</td>
+          <td style="padding: 8px; color: #107c41;">[${r.activeTitle || '사원'}]</td>
+          <td style="padding: 8px; text-align: right; font-weight: bold; font-family: Consolas;">${r.formattedPoints} P</td>
+        `;
+        body.appendChild(tr);
       });
     }
 
     async function loadTitles() {
       const res = await fetch(`/api/wallet?userId=${currentUserId}&name=${encodeURIComponent(currentUserName)}`);
       const data = await res.json();
-      const list = document.getElementById('titleList');
-      list.innerHTML = '';
+      const grid = document.getElementById('titlesGrid');
+      grid.innerHTML = '';
       data.allTitles.forEach(t => {
-        const item = document.createElement('div');
-        item.style.padding = '12px';
-        item.style.background = t.unlocked ? '#1e293b' : '#0f172a';
-        item.style.border = t.unlocked ? '1px solid #3b82f6' : '1px solid #334155';
-        item.style.borderRadius = '8px';
-        item.innerHTML = `
-          <h4>${t.unlocked ? '🔓' : '🔒'} ${t.name}</h4>
-          <p style="font-size:0.8rem; color:#94a3b8; margin: 4px 0;">${t.desc}</p>
-          ${t.unlocked ? `<button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="equipTitle('${t.id}')">장착하기</button>` : ''}
+        const card = document.createElement('div');
+        card.style.border = '1px solid #d2d0ce';
+        card.style.padding = '10px';
+        card.style.borderRadius = '2px';
+        card.style.background = t.unlocked ? '#eef8f1' : '#faf9f8';
+        card.innerHTML = `
+          <div style="font-weight: bold; color: ${t.unlocked ? '#107c41' : '#605e5c'};">${t.unlocked ? '🔓' : '🔒'} ${t.name}</div>
+          <div style="font-size: 10px; color: #605e5c; margin: 4px 0;">${t.desc}</div>
+          ${t.unlocked ? `<button style="background: #107c41; color: white; border: none; padding: 2px 8px; font-size: 10px; cursor: pointer;" onclick="equipTitle('${t.id}')">장착</button>` : ''}
         `;
-        list.appendChild(item);
+        grid.appendChild(card);
       });
     }
 
