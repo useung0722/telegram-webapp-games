@@ -29,8 +29,32 @@ function formatKoreanNumber(val) {
     isNegative = true;
     str = str.slice(1);
   }
+
+  // 지수 표기법 (예: 6.75e+21) 처리: BigInt로 파싱 가능한 정수 문자열로 변환
+  if (/^[0-9.]+[eE][+-]?[0-9]+$/.test(str)) {
+    try {
+      const parts = str.split(/[eE]/);
+      let base = parts[0];
+      const exp = parseInt(parts[1], 10);
+      if (exp >= 0) {
+        const dotIdx = base.indexOf('.');
+        if (dotIdx >= 0) {
+          const decPlaces = base.length - dotIdx - 1;
+          const digits = base.replace('.', '');
+          if (exp >= decPlaces) {
+            str = digits + '0'.repeat(exp - decPlaces);
+          } else {
+            str = digits.slice(0, dotIdx + exp);
+          }
+        } else {
+          str = base + '0'.repeat(exp);
+        }
+      }
+    } catch (e) {}
+  }
+
   try {
-    let bn = BigInt(str);
+    let bn = BigInt(str.split('.')[0]);
     if (bn === 0n) return '0';
     if (bn < 10000n) return (isNegative ? '-' : '') + bn.toLocaleString();
 
