@@ -284,28 +284,28 @@ function getWallet(userId, name) {
 }
 
 // ==========================================
-// 🎖️ 텔레그램 단톡방 맞춤 칭호(Custom Title) 시스템
+// 🎖️ 텔레그램 단톡방 맞춤 칭호(Custom Title) 시스템 (시즌 2 밸런스 패치)
 // ==========================================
 const TITLE_DEFINITIONS = [
-  // 1. 자산/지갑 단계형
-  { id: 't_dirt', name: '💸 흙수저 탈출', cleanName: '흙수저 탈출', desc: '잔액 1만 P 이상', check: (w) => (w.points || 0) >= 10000 },
-  { id: 't_mid', name: '💼 중산층', cleanName: '중산층', desc: '잔액 5만 P 이상', check: (w) => (w.points || 0) >= 50000 },
-  { id: 't_rich', name: '💰 백만장자', cleanName: '백만장자', desc: '잔액 10만 P 이상', check: (w) => (w.points || 0) >= 100000 },
-  { id: 't_dia', name: '💎 다이아 수저', cleanName: '다이아 수저', desc: '잔액 50만 P 이상', check: (w) => (w.points || 0) >= 500000 },
-  { id: 't_mansour', name: '👑 만수르', cleanName: '만수르', desc: '잔액 100만 P 이상', check: (w) => (w.points || 0) >= 1000000 },
+  // 1. 자산/지갑 단계형 (시즌 2 기본 100만 P 반영)
+  { id: 't_dirt', name: '💸 흙수저 탈출', cleanName: '흙수저 탈출', desc: '잔액 150만 P 이상', check: (w) => (w.points || 0) >= 1500000 },
+  { id: 't_mid', name: '💼 중산층', cleanName: '중산층', desc: '잔액 300만 P 이상', check: (w) => (w.points || 0) >= 3000000 },
+  { id: 't_rich', name: '💰 백만장자', cleanName: '백만장자', desc: '잔액 1,000만 P 이상', check: (w) => (w.points || 0) >= 10000000 },
+  { id: 't_dia', name: '💎 다이아 수저', cleanName: '다이아 수저', desc: '잔액 5,000만 P 이상', check: (w) => (w.points || 0) >= 50000000 },
+  { id: 't_mansour', name: '👑 만수르', cleanName: '만수르', desc: '잔액 1억 P 이상', check: (w) => (w.points || 0) >= 100000000 },
 
-  // 2. 경마/도박 업적형
-  { id: 't_first_win', name: '🥉 경마 입문자', cleanName: '경마 입문자', desc: '경마 1위 1회 적중', check: (w) => (w.wins || 0) >= 1 },
-  { id: 't_god', name: '🏇 경마의 신', cleanName: '경마의 신', desc: '경마 1위 5회 적중', check: (w) => (w.wins || 0) >= 5 },
-  { id: 't_legend', name: '🦄 전설의 기수', cleanName: '전설의 기수', desc: '경마 1위 15회 적중', check: (w) => (w.wins || 0) >= 15 },
-  { id: 't_underdog', name: '🎯 역배의 제왕', cleanName: '역배의 제왕', desc: '배당 3.0배 이상 적중', check: (w) => (w.maxOdds || 0) >= 3.0 },
-  { id: 't_miracle', name: '⚡ 기적의 눈썰미', cleanName: '기적의 눈썰미', desc: '배당 5.0배 이상 적중', check: (w) => (w.maxOdds || 0) >= 5.0 },
-  { id: 't_jackpot', name: '🎰 잭팟 마스터', cleanName: '잭팟 마스터', desc: '한 판에 5만 P 이상 수익', check: (w) => (w.maxProfit || 0) >= 50000 },
-  { id: 't_bigwin', name: '🌊 한강 뷰', cleanName: '한강 뷰', desc: '한 판에 20만 P 이상 수익', check: (w) => (w.maxProfit || 0) >= 200000 },
+  // 2. 경마/도박 업적형 (12마리 레이스 배당 및 난이도 개편)
+  { id: 't_first_win', name: '🥉 경마 입문자', cleanName: '경마 입문자', desc: '경마 1위 3회 적중', check: (w) => (w.wins || 0) >= 3 },
+  { id: 't_god', name: '🏇 승리의 베테랑', cleanName: '승리의 베테랑', desc: '경마 1위 20회 적중', check: (w) => (w.wins || 0) >= 20 },
+  { id: 't_legend', name: '🦄 전설의 기수', cleanName: '전설의 기수', desc: '경마 1위 50회 적중', check: (w) => (w.wins || 0) >= 50 },
+  { id: 't_underdog', name: '🎯 역배의 제왕', cleanName: '역배의 제왕', desc: '배당 10.0배 이상 적중', check: (w) => (w.maxOdds || 0) >= 10.0 },
+  { id: 't_miracle', name: '⚡ 기적의 눈썰미', cleanName: '기적의 눈썰미', desc: '배당 30.0배 이상 적중', check: (w) => (w.maxOdds || 0) >= 30.0 },
+  { id: 't_jackpot', name: '🎰 잭팟 마스터', cleanName: '잭팟 마스터', desc: '한 판에 100만 P 이상 수익', check: (w) => (w.maxProfit || 0) >= 1000000 },
+  { id: 't_bigwin', name: '🌊 한강 뷰', cleanName: '한강 뷰', desc: '한 판에 1,000만 P 이상 수익', check: (w) => (w.maxProfit || 0) >= 10000000 },
   { id: 't_bankrupt', name: '☠️ 깡통 계좌', cleanName: '깡통 계좌', desc: '배팅 후 잔액 0 P 기록', check: (w) => !!w.bankruptHit },
   { id: 't_allin', name: '🎲 인생 한방러', cleanName: '인생 한방러', desc: '올인 배팅 승리 경험', check: (w) => !!w.allInWon },
-  { id: 't_gambler', name: '🚨 도박 중독', cleanName: '도박 중독', desc: '경마 누적 10회 참여', check: (w) => (w.raceCount || 0) >= 10 },
-  { id: 't_vip', name: '💎 마사회 VIP', cleanName: '마사회 VIP', desc: '경마 누적 30회 참여', check: (w) => (w.raceCount || 0) >= 30 },
+  { id: 't_gambler', name: '🚨 도박 중독', cleanName: '도박 중독', desc: '경마 누적 50회 참여', check: (w) => (w.raceCount || 0) >= 50 },
+  { id: 't_vip', name: '💎 마사회 VIP', cleanName: '마사회 VIP', desc: '경마 누적 150회 참여', check: (w) => (w.raceCount || 0) >= 150 },
 
   // 3. 알바/근면성실형
   { id: 't_cleaner', name: '🧹 탕비실 반장', cleanName: '탕비실 반장', desc: '알바(구걸) 5회 달성', check: (w) => (w.begCount || 0) >= 5 },

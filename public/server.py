@@ -21,6 +21,39 @@ subscribers_lock = threading.Lock()
 WALLETS_FILE = os.path.join(DIRECTORY, "..", "wallets.json")
 ACTIVE_RACES_FILE = os.path.join(DIRECTORY, "..", "active_races.json")
 
+TITLE_DEFINITIONS = [
+    {"id": "t_dirt", "name": "💸 흙수저 탈출", "cleanName": "흙수저 탈출", "desc": "잔액 150만 P 이상", "check": lambda w: w.get("points", 0) >= 1500000},
+    {"id": "t_mid", "name": "💼 중산층", "cleanName": "중산층", "desc": "잔액 300만 P 이상", "check": lambda w: w.get("points", 0) >= 3000000},
+    {"id": "t_rich", "name": "💰 백만장자", "cleanName": "백만장자", "desc": "잔액 1,000만 P 이상", "check": lambda w: w.get("points", 0) >= 10000000},
+    {"id": "t_dia", "name": "💎 다이아 수저", "cleanName": "다이아 수저", "desc": "잔액 5,000만 P 이상", "check": lambda w: w.get("points", 0) >= 50000000},
+    {"id": "t_mansour", "name": "👑 만수르", "cleanName": "만수르", "desc": "잔액 1억 P 이상", "check": lambda w: w.get("points", 0) >= 100000000},
+    {"id": "t_first_win", "name": "🥉 경마 입문자", "cleanName": "경마 입문자", "desc": "경마 1위 3회 적중", "check": lambda w: w.get("wins", 0) >= 3},
+    {"id": "t_god", "name": "🏇 승리의 베테랑", "cleanName": "승리의 베테랑", "desc": "경마 1위 20회 적중", "check": lambda w: w.get("wins", 0) >= 20},
+    {"id": "t_legend", "name": "🦄 전설의 기수", "cleanName": "전설의 기수", "desc": "경마 1위 50회 적중", "check": lambda w: w.get("wins", 0) >= 50},
+    {"id": "t_underdog", "name": "🎯 역배의 제왕", "cleanName": "역배의 제왕", "desc": "배당 10.0배 이상 적중", "check": lambda w: w.get("maxOdds", 0) >= 10.0},
+    {"id": "t_miracle", "name": "⚡ 기적의 눈썰미", "cleanName": "기적의 눈썰미", "desc": "배당 30.0배 이상 적중", "check": lambda w: w.get("maxOdds", 0) >= 30.0},
+    {"id": "t_jackpot", "name": "🎰 잭팟 마스터", "cleanName": "잭팟 마스터", "desc": "한 판에 100만 P 이상 수익", "check": lambda w: w.get("maxProfit", 0) >= 1000000},
+    {"id": "t_bigwin", "name": "🌊 한강 뷰", "cleanName": "한강 뷰", "desc": "한 판에 1,000만 P 이상 수익", "check": lambda w: w.get("maxProfit", 0) >= 10000000},
+    {"id": "t_bankrupt", "name": "☠️ 깡통 계좌", "cleanName": "깡통 계좌", "desc": "배팅 후 잔액 0 P 기록", "check": lambda w: bool(w.get("bankruptHit"))},
+    {"id": "t_allin", "name": "🎲 인생 한방러", "cleanName": "인생 한방러", "desc": "올인 배팅 승리 경험", "check": lambda w: bool(w.get("allInWon"))},
+    {"id": "t_gambler", "name": "🚨 도박 중독", "cleanName": "도박 중독", "desc": "경마 누적 50회 참여", "check": lambda w: w.get("raceCount", 0) >= 50},
+    {"id": "t_vip", "name": "💎 마사회 VIP", "cleanName": "마사회 VIP", "desc": "경마 누적 150회 참여", "check": lambda w: w.get("raceCount", 0) >= 150},
+    {"id": "t_cleaner", "name": "🧹 탕비실 반장", "cleanName": "탕비실 반장", "desc": "알바(구걸) 5회 달성", "check": lambda w: w.get("begCount", 0) >= 5},
+    {"id": "t_worker", "name": "📦 쿠팡 에이스", "cleanName": "쿠팡 에이스", "desc": "알바(구걸) 15회 달성", "check": lambda w: w.get("begCount", 0) >= 15},
+    {"id": "t_begking", "name": "🪙 동냥 마스터", "cleanName": "동냥 마스터", "desc": "알바(구걸) 30회 달성", "check": lambda w: w.get("begCount", 0) >= 30}
+]
+
+def check_and_unlock_titles(w):
+    unlocked = w.get("unlockedTitles") or []
+    for t in TITLE_DEFINITIONS:
+        try:
+            if t["id"] not in unlocked and t["check"](w):
+                unlocked.append(t["id"])
+        except Exception:
+            pass
+    w["unlockedTitles"] = unlocked
+    return unlocked
+
 def load_wallets():
     try:
         if os.path.exists(WALLETS_FILE):
@@ -199,6 +232,40 @@ class RaceHandler(SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
 
+        # 5. 사용자 칭호 목록 및 장착 상태 조회
+        elif path == "/api/titles":
+            query = parse_qs(url.query)
+            user_id = query.get("user_id", [""])[0]
+            wallets = load_wallets()
+            w = wallets.get(str(user_id), {"points": 10000, "name": "익명"})
+            unlocked = check_and_unlock_titles(w)
+            wallets[str(user_id)] = w
+            save_wallets(wallets)
+
+            title_list = []
+            for t in TITLE_DEFINITIONS:
+                title_list.append({
+                    "id": t["id"],
+                    "name": t["name"],
+                    "cleanName": t["cleanName"],
+                    "desc": t["desc"],
+                    "unlocked": t["id"] in unlocked
+                })
+
+            resp = {
+                "activeTitle": w.get("activeTitle", ""),
+                "unlockedCount": len(unlocked),
+                "totalCount": len(TITLE_DEFINITIONS),
+                "titles": title_list
+            }
+            data = json.dumps(resp, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         super().do_GET()
 
     def do_POST(self):
@@ -216,11 +283,37 @@ class RaceHandler(SimpleHTTPRequestHandler):
             race_id = str(payload.get("race_id", "default"))
             emoji = payload.get("emoji", "🔥")
             user_name = payload.get("user_name", "팀원")
+            horse_id = int(payload.get("horse_id", 0))  # 1, 2, 3 or 0 (미지정)
             broadcast(race_id, "reaction", {
                 "emoji": emoji,
                 "user_name": user_name,
+                "horse_id": horse_id,
                 "timestamp": time.time()
             })
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"success": true}')
+            return
+
+        # 4-1. 실시간 채팅 메시지 브로드캐스트
+        elif path == "/api/chat":
+            race_id = str(payload.get("race_id", "default"))
+            user_name = payload.get("user_name", "익명")
+            active_title = payload.get("active_title", "")
+            text = (payload.get("text", "") or "").strip()[:60]
+            horse_id = int(payload.get("horse_id", 0))
+
+            if text:
+                broadcast(race_id, "chat", {
+                    "user_name": user_name,
+                    "active_title": active_title,
+                    "text": text,
+                    "horse_id": horse_id,
+                    "timestamp": time.time()
+                })
+
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -361,6 +454,75 @@ class RaceHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             msg = f"🧹 탕비실 분리수거 알바 완료! +5,000 P 충전되었습니다.\n현재 잔액: {w['points']:,} P"
             self.wfile.write(json.dumps({"success": True, "message": msg, "remain_points": w["points"]}).encode("utf-8"))
+            return
+
+        # 7. 칭호 장착 / 해제 처리
+        elif path == "/api/title/equip":
+            user_id = str(payload.get("user_id", ""))
+            title_id = payload.get("title_id", "")
+            action = payload.get("action", "equip") # "equip" 또는 "clear"
+
+            if not user_id:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": "사용자 정보가 없습니다."}).encode("utf-8"))
+                return
+
+            wallets = load_wallets()
+            w = wallets.get(user_id)
+            if not w:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": "지갑 정보가 없습니다."}).encode("utf-8"))
+                return
+
+            unlocked = check_and_unlock_titles(w)
+
+            if action == "clear":
+                w["activeTitle"] = ""
+                wallets[user_id] = w
+                save_wallets(wallets)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "message": "칭호가 해제되었습니다.", "activeTitle": ""}).encode("utf-8"))
+                return
+
+            target_title = next((t for t in TITLE_DEFINITIONS if t["id"] == title_id), None)
+            if not target_title:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": "존재하지 않는 칭호입니다."}).encode("utf-8"))
+                return
+
+            if title_id not in unlocked:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": f"🔒 아직 해금되지 않은 칭호입니다! ({target_title['desc']})"}).encode("utf-8"))
+                return
+
+            w["activeTitle"] = target_title["cleanName"]
+            wallets[user_id] = w
+            save_wallets(wallets)
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "success": True,
+                "message": f"[{target_title['name']}] 칭호가 장착되었습니다!",
+                "activeTitle": target_title["cleanName"]
+            }).encode("utf-8"))
             return
 
         self.send_response(404)
