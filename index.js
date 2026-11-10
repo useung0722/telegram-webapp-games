@@ -305,6 +305,20 @@ const TITLE_DEFINITIONS = [
   { id: 't_begking', name: '🪙 동냥 마스터', cleanName: '동냥 마스터', desc: '알바(구걸) 30회 달성', check: (w) => (w.begCount || 0) >= 30 }
 ];
 
+function getAllTitlesForUser(w) {
+  const titles = [...TITLE_DEFINITIONS];
+  if (w.legacyTitleName) {
+    titles.unshift({
+      id: 't_legacy',
+      name: `🏛️ ${w.legacyTitleName}`,
+      cleanName: w.legacyTitleName,
+      desc: '리셋 이전 명예 자산가 기념 칭호',
+      check: () => true
+    });
+  }
+  return titles;
+}
+
 function checkAndUnlockTitles(w) {
   if (!w.unlockedTitles) w.unlockedTitles = [];
   const newlyUnlocked = [];
@@ -376,53 +390,18 @@ function getRandomTitle() {
   return TITLES[Math.floor(Math.random() * TITLES.length)];
 }
 
-const WORD_PACKS = [
-  { category: '음식 / 배달', words: ['탕수육', '마라탕', '치킨', '피자', '떡볶이', '짜장면', '삼겹살', '초밥', '햄버거', '라면', '김치찌개', '돈까스', '곱창', '족발', '붕어빵'] },
-  { category: '직장 생활 / 회사', words: ['탕비실', '야근', '월급', '사원증', '법인카드', '연차', '회의실', '커피머신', '슬랙', '엑셀', '보고서', '대표님', '회식', '칼퇴', '출근길'] },
-  { category: '전자제품 / IT', words: ['노트북', '스마트폰', '무선이어폰', '보조배터리', '마우스', '키보드', '스마트워치', '태블릿', '모니터', '냉장고', '에어컨', '로봇청소기', '선풍기'] },
-  { category: '동물', words: ['호랑이', '강아지', '고양이', '판다', '기린', '코끼리', '펭귄', '돌고래', '캥거루', '카멜레온', '원숭이', '토끼', '악어', '햄스터'] },
-  { category: '장소 / 여행', words: ['제주도', '놀이공원', '워터파크', '영화관', '찜질방', '공항', '도서관', '편의점', '헬스장', '노래방', '캠핑장', '백화점', '동물원'] },
-  { category: '일상 / 취미', words: ['유튜브', '넷플릭스', '인스타그램', '낮잠', '쇼핑', '독서', '달리기', '낚시', '등산', '게임', '골프', '보드게임'] }
-];
-
-const games = {};
-
-function getLobbyText(game) {
-  const playerList = game.players.size > 0
-    ? Array.from(game.players.values()).map((p, i) => `${i + 1}. [${p.title}] **${p.name}**`).join('\n')
-    : '(아직 참가자가 없습니다)';
-
-  return '☕️ **[커피 내기 라이어 게임] 대기실!**\n\n' +
-    '아래 [🙋 참가하기] 버튼을 눌러주세요 (최소 3명).\n' +
-    '버튼이 대화에 밀렸다면 `/끌올` 로 언제든 끌어올릴 수 있습니다.\n\n' +
-    '☕️ **벌칙 룰**:\n' +
-    '• 라이어 패배 시 👉 **라이어가 커피 쏘기!**\n' +
-    '• 라이어 승리 시 👉 **나머지 시민 중 랜덤 1명이 커피 쏘기!** 🎯\n\n' +
-    `👥 **참가자 명단 (${game.players.size}명)**:\n${playerList}`;
-}
-
-function getLobbyKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('🙋 참가하기', 'join_game'), Markup.button.callback('🚪 나가기', 'leave_game')],
-    [Markup.button.callback('🚀 바로 시작하기', 'force_start')]
-  ]);
-}
-
 // 🔘 메시지 하단 공통 명령어 인라인 키보드 (게임방 / 경마 결과 등)
 function getGameActionButtons() {
   return Markup.inlineKeyboard([
     [
-      Markup.button.callback('🏇 다음 경마', 'cmd_race'),
-      Markup.button.callback('💰 내 지갑', 'cmd_wallet'),
-      Markup.button.callback('🧹 구걸(알바)', 'cmd_beg')
+      Markup.button.callback('🏇 경마', 'cmd_race'),
+      Markup.button.callback('🚀 비행기', 'cmd_aviator'),
+      Markup.button.callback('⏳ 예정', 'cmd_upcoming')
     ],
     [
-      Markup.button.callback('🎖️ 내 칭호', 'cmd_title'),
-      Markup.button.callback('🏆 부자 랭킹', 'cmd_rank'),
-      Markup.button.callback('🤥 라이어 게임', 'cmd_game')
-    ],
-    [
-      Markup.button.callback('🍱 점심 메뉴', 'cmd_lunch')
+      Markup.button.callback('💰 내지갑', 'cmd_wallet'),
+      Markup.button.callback('🎖️ 내칭호', 'cmd_title'),
+      Markup.button.callback('🏆 랭킹', 'cmd_rank')
     ]
   ]);
 }
@@ -431,7 +410,25 @@ function getGameActionButtons() {
 // 🏇 대환장 동물 달리기 대회 (경마/배팅 모듈 로드)
 // ==========================================
 const { initHorseRace } = require('./games/horse-race');
+const { scheduleDaily7AMPatch } = require('./games/auto-balancer');
 const { handleRace, handleTextBet, races } = initHorseRace(bot, {
+  getThreadId,
+  GAME_THREAD_ID,
+  getWallet,
+  saveWallets,
+  checkAndUnlockTitles,
+  getGameActionButtons,
+  formatKoreanNumber
+});
+
+// ⏰ 매일 KST 07:00 동물 달리기 일일 자동 밸런스 패치 스케줄러 등록
+scheduleDaily7AMPatch(bot, LUNCH_CHAT_ID, GAME_THREAD_ID);
+
+// ==========================================
+// 🚀 Aviator (비행기 크래시 모듈 로드)
+// ==========================================
+const { initAviator } = require('./games/aviator');
+const { handleAviator, handleTextAviatorBet, aviatorGames } = initAviator(bot, {
   getThreadId,
   GAME_THREAD_ID,
   getWallet,
@@ -447,8 +444,7 @@ const { handleRace, handleTextBet, races } = initHorseRace(bot, {
 function isGameCmd(cmd) {
   const c = normalizeCmd(cmd);
   return ['지갑', 'wallet', '내돈', '돈', '잔액', '구걸', 'beg', '알바', '충전', '랭킹', 'rank', '순위', '부자',
-          '경마', 'race', '말', '경주', '게임', 'game', '라이어', '끌올', 'up', 'pull',
-          '시작', 'startgame', '스타트', '투표', 'vote', '종료', 'stopgame', '스톱'].includes(c);
+          '경마', 'race', '말', '경주', '비행기', '비행', 'aviator', 'crash', '크래시'].includes(c);
 }
 
 function isLunchCmd(cmd) {
@@ -516,17 +512,18 @@ bot.use(async (ctx, next) => {
 async function sendHelp(ctx) {
   return ctx.reply(
     '🎮 **사내 미니게임 봇 명령어 안내**\n\n' +
-    '🏇 **실시간 경마 대회 (배팅 게임)**\n' +
-    '• `/경마` (또는 `/race`) : 경마 대회 대기실 오픈\n' +
-    '• `/지갑` (또는 `/wallet`) : 내 포인트 잔액 확인 (기본 10,000P)\n' +
+    '🏇 **실시간 동물 달리기 (경마 배팅)**\n' +
+    '• `/경마` (또는 `/race`) : 달리기 대회 대기실 오픈\n' +
+    '• 배팅 방법: `1번 50000`, `2번 1.5억`, `3번 올인` 등 자유 입력\n\n' +
+    '🚀 **Aviator 비행기 (크래시 배팅)**\n' +
+    '• `/비행기` (또는 `/aviator`) : 비행기 탑승 수속 오픈\n' +
+    '• 배팅 방법: `비행기 50000`, `비행기 1억`, `비행기 올인` 등 자유 입력\n' +
+    '• 비행 중 **[🪂 지금 탈출하기]**를 눌러 폭발 전에 익절하세요!\n\n' +
+    '💰 **포인트 & 랭킹**\n' +
+    '• `/지갑` (또는 `/wallet`) : 내 포인트 잔액 확인\n' +
     '• `/랭킹` (또는 `/rank`) : 사내 부자 순위 TOP 10\n' +
+    '• `/칭호` (또는 `/title`) : 내 맞춤 칭호 도감 및 장착\n' +
     '• `/구걸` (또는 `/beg`) : 탕비실 분리수거 알바 (+5,000P 충전)\n\n' +
-    '🤥 **라이어 게임 (커피 내기)**\n' +
-    '• `/게임` (또는 `/game`) : 라이어 게임 대기실 생성\n' +
-    '• `/끌올` (또는 `/up`) : 대기실 카드를 맨 아래로 재소환\n' +
-    '• `/시작` (또는 `/startgame`) : 게임 시작\n' +
-    '• `/투표` (또는 `/vote`) : 실시간 다수결 투표판 오픈\n' +
-    '• `/종료` (또는 `/stopgame`) : 게임 강제 중단\n\n' +
     '🍱 **점심 메뉴 (사내 식단표)**\n' +
     '• `/런치` (또는 `/lunch`) : 오늘 중식 메뉴 + 코너 투표\n' +
     '• `/런치전체` (또는 `/lunchall`) : 조식·중식·석식 전체\n' +
@@ -670,9 +667,13 @@ bot.action('cmd_rank', async (ctx) => {
   });
 });
 
-bot.action('cmd_game', async (ctx) => {
-  await ctx.answerCbQuery('🤥 라이어 게임 대기실을 엽니다!');
-  return handleLobby(ctx);
+bot.action('cmd_aviator', async (ctx) => {
+  await ctx.answerCbQuery('🚀 비행기 탑승을 준비합니다!');
+  return handleAviator(ctx);
+});
+
+bot.action('cmd_upcoming', async (ctx) => {
+  return ctx.answerCbQuery('⏳ 새로운 미니게임이 곧 추가될 예정입니다! 기대해 주세요 🎲', { show_alert: true });
 });
 
 bot.action('cmd_lunch', async (ctx) => {
@@ -691,7 +692,8 @@ function getTitleSelectKeyboard(userId) {
   checkAndUnlockTitles(w);
   const rows = [];
 
-  const unlocked = TITLE_DEFINITIONS.filter(t => (w.unlockedTitles || []).includes(t.id));
+  const allDefs = getAllTitlesForUser(w);
+  const unlocked = allDefs.filter(t => (w.unlockedTitles || []).includes(t.id));
 
   for (let i = 0; i < unlocked.length; i += 2) {
     const r = [];
@@ -719,10 +721,11 @@ function getTitleListText(w) {
   checkAndUnlockTitles(w);
   saveWallets();
 
+  const allDefs = getAllTitlesForUser(w);
   const activeStr = w.activeTitle ? `현재 장착: **${w.activeTitle}**` : '현재 장착: (없음)';
   const unlockedIds = new Set(w.unlockedTitles || []);
 
-  const listStr = TITLE_DEFINITIONS.map(t => {
+  const listStr = allDefs.map(t => {
     const isUnlocked = unlockedIds.has(t.id);
     const statusIcon = isUnlocked ? '🔓' : '🔒';
     const tag = isUnlocked ? (w.activeTitle === t.cleanName ? ' [장착중]' : ' [선택가능]') : ' [미달성]';
@@ -731,7 +734,7 @@ function getTitleListText(w) {
 
   return `🎖️ **[${w.name} 님의 맞춤 칭호 도감]**\n\n` +
     `${activeStr}\n` +
-    `💡 해금 완료: **${unlockedIds.size}** / ${TITLE_DEFINITIONS.length} 개\n\n` +
+    `💡 해금 완료: **${unlockedIds.size}** / ${allDefs.length} 개\n\n` +
     `━━━━━━━━━━━━━━━\n` +
     `${listStr}\n` +
     `━━━━━━━━━━━━━━━\n` +
@@ -756,9 +759,10 @@ bot.action('cmd_title', async (ctx) => {
   checkAndUnlockTitles(w);
   saveWallets();
 
+  const allDefs = getAllTitlesForUser(w);
   const activeStr = w.activeTitle ? `[${w.activeTitle}]` : '(없음)';
   const unlockedIds = new Set(w.unlockedTitles || []);
-  const unlockedTitles = TITLE_DEFINITIONS.filter(t => unlockedIds.has(t.id));
+  const unlockedTitles = allDefs.filter(t => unlockedIds.has(t.id));
 
   // 텔레그램 콜백 팝업(Alert) 200자 제한 맞춤 요약
   let namesSummary = '';
@@ -774,7 +778,7 @@ bot.action('cmd_title', async (ctx) => {
   const popupText = `🎖️ [내 칭호 정보]\n` +
     `👤 ${w.name} 님\n` +
     `장착중: ${activeStr}\n` +
-    `달성: ${unlockedIds.size} / ${TITLE_DEFINITIONS.length}개\n\n` +
+    `달성: ${unlockedIds.size} / ${allDefs.length}개\n\n` +
     `보유: ${namesSummary}\n\n` +
     `👉 장착/해제는 채팅창에 /칭호 입력!`;
 
@@ -790,7 +794,8 @@ bot.action(/^set_title_(.+)$/, async (ctx) => {
   const user = ctx.from;
   const name = user.first_name + (user.last_name ? ' ' + user.last_name : '');
   const w = getWallet(user.id, name);
-  const targetTitle = TITLE_DEFINITIONS.find(t => t.id === titleId);
+  const allDefs = getAllTitlesForUser(w);
+  const targetTitle = allDefs.find(t => t.id === titleId);
 
   if (!targetTitle) {
     return ctx.answerCbQuery('존재하지 않는 칭호입니다.', { show_alert: true });
@@ -862,378 +867,6 @@ bot.action('refresh_title', async (ctx) => {
   } catch (e) {}
 });
 
-// ==========================================
-// 🤥 라이어 게임 한글 명령어
-// ==========================================
-async function handleLobby(ctx) {
-  if (ctx.chat.type === 'private') {
-    return ctx.reply('⚠️ 라이어 게임은 단톡방(그룹)에서 진행해야 재밌습니다. 그룹에 초대해주세요!');
-  }
-
-  const chatId = ctx.chat.id;
-  if (games[chatId] && (games[chatId].state === 'playing' || games[chatId].state === 'voting')) {
-    return ctx.reply('⚠️ 이미 진행 중인 라이어 게임이 있습니다. 종료하려면 `/종료` 를 입력하세요.');
-  }
-
-  if (games[chatId] && games[chatId].lastLobbyMessageId) {
-    try {
-      await ctx.deleteMessage(games[chatId].lastLobbyMessageId);
-    } catch (e) {}
-  }
-
-  const threadId = getThreadId(ctx) || GAME_THREAD_ID;
-  games[chatId] = {
-    threadId,
-    state: 'lobby',
-    players: new Map(),
-    userRoles: new Map(),
-    liarId: null,
-    category: null,
-    word: null,
-    lastLobbyMessageId: null,
-    votes: new Map()
-  };
-
-  const sentMsg = await ctx.reply(getLobbyText(games[chatId]), {
-    parse_mode: 'Markdown',
-    ...getLobbyKeyboard()
-  });
-
-  games[chatId].lastLobbyMessageId = sentMsg.message_id;
-}
-
-async function handlePullUp(ctx) {
-  const chatId = ctx.chat.id;
-  const game = games[chatId];
-
-  if (!game || game.state !== 'lobby') {
-    return ctx.reply('⚠️ 현재 대기 중인 게임이 없습니다. `/게임` 으로 대기실을 만드세요.');
-  }
-
-  if (game.lastLobbyMessageId) {
-    try {
-      await ctx.deleteMessage(game.lastLobbyMessageId);
-    } catch (e) {}
-  }
-
-  const sentMsg = await ctx.reply(getLobbyText(game), {
-    parse_mode: 'Markdown',
-    ...getLobbyKeyboard()
-  });
-
-  game.lastLobbyMessageId = sentMsg.message_id;
-}
-
-bot.action('join_game', async (ctx) => {
-  const chatId = ctx.chat.id;
-  const game = games[chatId];
-  if (!game || game.state !== 'lobby') return ctx.answerCbQuery('대기 중인 게임이 없습니다.');
-
-  const user = ctx.from;
-  const rawName = user.first_name + (user.last_name ? ' ' + user.last_name : '');
-
-  if (game.players.has(user.id)) return ctx.answerCbQuery('이미 참가하셨습니다! ✅');
-
-  const title = getRandomTitle();
-  game.players.set(user.id, { name: rawName, title });
-  await ctx.answerCbQuery(`[${title}] ${rawName}님 참가 완료!`);
-
-  try {
-    await ctx.editMessageText(getLobbyText(game), { parse_mode: 'Markdown', ...getLobbyKeyboard() });
-  } catch (e) {}
-});
-
-bot.action('leave_game', async (ctx) => {
-  const chatId = ctx.chat.id;
-  const game = games[chatId];
-  if (!game || game.state !== 'lobby') return ctx.answerCbQuery('대기 중인 게임이 없습니다.');
-
-  const user = ctx.from;
-  if (!game.players.has(user.id)) return ctx.answerCbQuery('참가 상태가 아닙니다.');
-
-  game.players.delete(user.id);
-  await ctx.answerCbQuery('대기실에서 나왔습니다.');
-
-  try {
-    await ctx.editMessageText(getLobbyText(game), { parse_mode: 'Markdown', ...getLobbyKeyboard() });
-  } catch (e) {}
-});
-
-bot.action('check_my_role', async (ctx) => {
-  const chatId = ctx.chat.id;
-  const game = games[chatId];
-  if (!game || (game.state !== 'playing' && game.state !== 'voting')) {
-    return ctx.answerCbQuery('현재 진행 중인 게임이 없습니다.', { show_alert: true });
-  }
-
-  const userId = ctx.from.id;
-  if (!game.players.has(userId)) {
-    return ctx.answerCbQuery('⚠️ 이번 게임 참가자가 아닙니다!', { show_alert: true });
-  }
-
-  const roleText = game.userRoles.get(userId) || '정보가 없습니다.';
-  return ctx.answerCbQuery(roleText, { show_alert: true });
-});
-
-async function startGameLogic(chatId, ctx) {
-  const game = games[chatId];
-  if (!game || game.state !== 'lobby') return ctx.reply('대기 중인 게임이 없습니다.');
-
-  const playerIds = Array.from(game.players.keys());
-  if (playerIds.length < 3) return ctx.reply(`⚠️ 최소 3명 이상 참가해야 합니다! (현재 ${playerIds.length}명)`);
-
-  game.state = 'playing';
-  game.votes = new Map();
-
-  const pack = WORD_PACKS[Math.floor(Math.random() * WORD_PACKS.length)];
-  const word = pack.words[Math.floor(Math.random() * pack.words.length)];
-  game.category = pack.category;
-  game.word = word;
-
-  const liarIndex = Math.floor(Math.random() * playerIds.length);
-  game.liarId = playerIds[liarIndex];
-
-  game.userRoles.clear();
-  for (const pId of playerIds) {
-    const pInfo = game.players.get(pId);
-    if (pId === game.liarId) {
-      game.userRoles.set(pId, `🤥 [당신은 라이어입니다!]\n칭호: [${pInfo.title}]\n\n📂 카테고리: [ ${pack.category} ]\n\n⚠️ 지면 커피 사야 합니다! 눈치껏 아는 척하세요!`);
-    } else {
-      game.userRoles.set(pId, `👤 [당신은 시민입니다!]\n칭호: [${pInfo.title}]\n\n📂 카테고리: [ ${pack.category} ]\n🎯 제시어: [ ${word} ]\n\n라이어를 못 잡거나 라이어가 맞히면 우리 중 1명이 커피 당첨!`);
-    }
-  }
-
-  const order = [...playerIds].sort(() => Math.random() - 0.5);
-  const orderText = order.map((id, idx) => {
-    const p = game.players.get(id);
-    return `${idx + 1}번: [${p.title}] **${p.name}**`;
-  }).join('\n');
-
-  const keyboard = Markup.inlineKeyboard([
-    [Markup.button.callback('🔍 내 비밀 제시어 확인하기 (팝업)', 'check_my_role')],
-    [Markup.button.callback('🗳️ 라이어 실시간 투표 시작', 'open_vote')]
-  ]);
-
-  const startMsg = `☕️ **커피 내기 라이어 게임 시작!**\n\n` +
-    `📂 **카테고리**: **[ ${pack.category} ]**\n` +
-    `👥 참가자: **${playerIds.length}명** (시민 ${playerIds.length - 1}명, 라이어 1명)\n\n` +
-    `👇 **아래 버튼을 눌러 본인의 제시어/라이어 여부를 확인하세요!**\n\n` +
-    `🗣️ **설명 순서**:\n${orderText}\n\n` +
-    `한 바퀴 설명을 마친 후, [🗳️ 라이어 실시간 투표 시작] 버튼을 누르세요!`;
-
-  const threadId = game.threadId || getThreadId(ctx) || GAME_THREAD_ID;
-  const startExtra = { parse_mode: 'Markdown', ...keyboard };
-  if (threadId) startExtra.message_thread_id = threadId;
-
-  await bot.telegram.sendMessage(chatId, startMsg, startExtra);
-}
-
-bot.action('force_start', async (ctx) => {
-  await ctx.answerCbQuery();
-  return startGameLogic(ctx.chat.id, ctx);
-});
-
-async function handleStartGame(ctx) {
-  return startGameLogic(ctx.chat.id, ctx);
-}
-
-function getVoteStatusText(game) {
-  const total = game.players.size;
-  const votedCount = game.votes.size;
-  const voteCounts = {};
-  for (const targetId of game.votes.values()) {
-    voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
-  }
-
-  const statusLines = Array.from(game.players.entries()).map(([id, p]) => {
-    const votesForMe = voteCounts[id] || 0;
-    const voteBar = '█'.repeat(votesForMe);
-    return `• [${p.title}] **${p.name}**: ${votesForMe}표 ${voteBar}`;
-  }).join('\n');
-
-  return `🗳️ **[라이어 검거 투표 진행 중!]**\n\n` +
-    `의심되는 사람의 버튼을 눌러 투표하세요 (재투표 가능).\n` +
-    `투표 현황: **${votedCount} / ${total}명 완료**\n\n` +
-    `📊 **실시간 득표 현황**:\n${statusLines}\n\n` +
-    `모두 투표했거나 마감하려면 아래 [🚨 투표 마감 & 개표] 버튼을 누르세요.`;
-}
-
-function getVoteKeyboard(game) {
-  const buttons = Array.from(game.players.entries()).map(([id, p]) => {
-    return [Markup.button.callback(`👉 [${p.title}] ${p.name}`, `cast_vote_${id}`)];
-  });
-  buttons.push([Markup.button.callback('🚨 투표 마감 & 개표하기', 'close_vote')]);
-  return Markup.inlineKeyboard(buttons);
-}
-
-async function openVoteDialog(chatId, ctx) {
-  const game = games[chatId];
-  if (!game || (game.state !== 'playing' && game.state !== 'voting')) {
-    return ctx.reply('현재 진행 중인 라이어 게임이 없습니다.');
-  }
-
-  game.state = 'voting';
-  game.votes = new Map();
-
-  await ctx.reply(getVoteStatusText(game), {
-    parse_mode: 'Markdown',
-    ...getVoteKeyboard(game)
-  });
-}
-
-bot.action('open_vote', async (ctx) => {
-  await ctx.answerCbQuery();
-  return openVoteDialog(ctx.chat.id, ctx);
-});
-
-async function handleVoteCmd(ctx) {
-  return openVoteDialog(ctx.chat.id, ctx);
-}
-
-bot.action(/^cast_vote_(\d+)$/, async (ctx) => {
-  const targetId = parseInt(ctx.match[1], 10);
-  const voterId = ctx.from.id;
-  const chatId = ctx.chat.id;
-  const game = games[chatId];
-
-  if (!game || game.state !== 'voting') return ctx.answerCbQuery('투표 진행 중이 아닙니다.');
-  if (!game.players.has(voterId)) return ctx.answerCbQuery('⚠️ 게임 참가자만 투표할 수 있습니다!', { show_alert: true });
-
-  const target = game.players.get(targetId);
-  game.votes.set(voterId, targetId);
-  await ctx.answerCbQuery(`[${target.name}] 님에게 투표했습니다!`);
-
-  try {
-    await ctx.editMessageText(getVoteStatusText(game), { parse_mode: 'Markdown', ...getVoteKeyboard(game) });
-  } catch (e) {}
-
-  if (game.votes.size === game.players.size) {
-    return finalizeVoting(chatId, ctx);
-  }
-});
-
-async function finalizeVoting(chatId, ctx) {
-  const game = games[chatId];
-  if (!game || game.state !== 'voting') return;
-  if (game.votes.size === 0) return ctx.reply('⚠️ 아직 아무도 투표하지 않았습니다!');
-
-  const counts = {};
-  for (const targetId of game.votes.values()) {
-    counts[targetId] = (counts[targetId] || 0) + 1;
-  }
-
-  let maxVotes = -1;
-  let topCandidates = [];
-  for (const [idStr, cnt] of Object.entries(counts)) {
-    const id = parseInt(idStr, 10);
-    if (cnt > maxVotes) {
-      maxVotes = cnt;
-      topCandidates = [id];
-    } else if (cnt === maxVotes) {
-      topCandidates.push(id);
-    }
-  }
-
-  if (topCandidates.length > 1) {
-    const tiedNames = topCandidates.map(id => game.players.get(id).name).join(', ');
-    return ctx.reply(`⚖️ **[동점 발생!]** (${tiedNames} - 각 ${maxVotes}표)\n재토론 후 다시 \`/투표\` 로 투표해주세요!`);
-  }
-
-  const convictedId = topCandidates[0];
-  const convicted = game.players.get(convictedId);
-  const isLiar = (convictedId === game.liarId);
-  const liar = game.players.get(game.liarId);
-
-  game.state = 'accused';
-
-  if (isLiar) {
-    const liarButtons = Markup.inlineKeyboard([
-      [
-        Markup.button.callback('🎯 라이어가 단어 맞힘! (역전승)', 'liar_win_by_guess'),
-        Markup.button.callback('❌ 라이어가 틀림! (시민 승)', 'citizen_win')
-      ]
-    ]);
-
-    await ctx.reply(
-      `📢 **투표 결과 발표!**\n\n` +
-      `최다 득표자 [ **${convicted.name}** ] 님이 **${maxVotes}표**를 받아 라이어로 최종 지목되었습니다!\n\n` +
-      `🎉 **검거 성공! [${convicted.title}] ${convicted.name} 님은 🤥 라이어가 맞았습니다!**\n\n` +
-      `💡 **라이어의 마지막 찬스!**\n` +
-      `라이어 [${convicted.title}] **${convicted.name}** 님, 진짜 제시어가 무엇이었는지 채팅으로 외쳐보세요!\n` +
-      `맞히면 라이어 역전승, 틀리면 시민 승리!`,
-      { parse_mode: 'Markdown', ...liarButtons }
-    );
-  } else {
-    finishGameWithLiarWin(chatId, ctx, liar, convicted, `투표로 억울한 시민 [${convicted.title}] ${convicted.name} 님이 몰림 (${maxVotes}표)`);
-  }
-}
-
-bot.action('close_vote', async (ctx) => {
-  await ctx.answerCbQuery();
-  return finalizeVoting(ctx.chat.id, ctx);
-});
-
-bot.action('liar_win_by_guess', async (ctx) => {
-  const chatId = ctx.chat.id;
-  const game = games[chatId];
-  if (!game || game.state !== 'accused') return ctx.answerCbQuery();
-  const liar = game.players.get(game.liarId);
-  await ctx.answerCbQuery('라이어 역전승!');
-  finishGameWithLiarWin(chatId, ctx, liar, null, '라이어가 진짜 제시어를 완벽하게 맞힘');
-});
-
-bot.action('citizen_win', async (ctx) => {
-  const chatId = ctx.chat.id;
-  const game = games[chatId];
-  if (!game || game.state !== 'accused') return ctx.answerCbQuery();
-  const liar = game.players.get(game.liarId);
-  await ctx.answerCbQuery('시민 팀 승리!');
-
-  const resultMsg = `🏆 **시민 팀 최종 승리!**\n\n` +
-    `🤥 라이어 [${liar.title}] **${liar.name}** 님이 검거되었고, 단어도 맞히지 못했습니다!\n` +
-    `🎯 제시어는 [ **${game.word}** ] 이었습니다.\n\n` +
-    `━━━━━━━━━━━━━━━\n` +
-    `☕️☕️ **커피 당첨자** ☕️☕️\n` +
-    `👉 오늘 커피는 패배한 라이어 [${liar.title}] **${liar.name}** 님이 쏩니다! 👏🎉\n` +
-    `━━━━━━━━━━━━━━━\n\n` +
-    `다음 판은 \`/게임\` 으로 시작하세요!`;
-
-  await ctx.reply(resultMsg, { parse_mode: 'Markdown' });
-  delete games[chatId];
-});
-
-async function finishGameWithLiarWin(chatId, ctx, liar, wrongAccused, reason) {
-  const game = games[chatId];
-  if (!game) return;
-
-  const citizenList = Array.from(game.players.entries())
-    .filter(([id]) => id !== game.liarId)
-    .map(([, info]) => info);
-
-  const unluckyCitizen = citizenList[Math.floor(Math.random() * citizenList.length)];
-
-  let resultMsg = `🏆 **라이어의 완벽한 승리!** (${reason})\n\n` +
-    `🤥 라이어는 바로 [${liar.title}] **${liar.name}** 님이었습니다!\n` +
-    `🎯 제시어는 [ **${game.word}** ] 이었습니다.\n\n` +
-    `━━━━━━━━━━━━━━━\n` +
-    `☕️☕️ **커피 당첨자 (덤터기 룰)** ☕️☕️\n` +
-    `라이어를 잡지 못한 죄!\n` +
-    `시민들 중 룰렛에 당첨된 불운의 주인공은...\n\n` +
-    `👉 💥 [${unluckyCitizen.title}] **${unluckyCitizen.name}** 님 당첨!! 💥\n\n` +
-    `오늘 커피 맛있게 잘 마시겠습니다! ☕️👏\n` +
-    `━━━━━━━━━━━━━━━\n\n` +
-    `복수전은 \`/게임\` 으로 시작하세요!`;
-
-  await ctx.reply(resultMsg, { parse_mode: 'Markdown' });
-  delete games[chatId];
-}
-
-async function handleStopGame(ctx) {
-  const chatId = ctx.chat.id;
-  if (!games[chatId]) return ctx.reply('진행 중인 라이어 게임이 없습니다.');
-  delete games[chatId];
-  return ctx.reply('🛑 라이어 게임이 강제로 종료되었습니다.');
-}
 
 // ==========================================
 // ⌨️ 한글 명령어 관대한 매칭 (오타·공백·대소문자 무시)
@@ -1246,11 +879,7 @@ const CMD_ALIASES = [
   { keys: ['칭호', 'title', '칭호목록', '내칭호'], fn: handleTitle },
   { keys: ['랭킹', 'rank', '순위', '부자'], fn: handleRank },
   { keys: ['경마', 'race', '말', '경주', '달리기'], fn: handleRace },
-  { keys: ['게임', 'game', '라이어'], fn: handleLobby },
-  { keys: ['끌올', 'up', 'pull'], fn: handlePullUp },
-  { keys: ['시작', 'startgame', '스타트'], fn: handleStartGame },
-  { keys: ['투표', 'vote'], fn: handleVoteCmd },
-  { keys: ['종료', 'stopgame', '스톱'], fn: handleStopGame },
+  { keys: ['비행기', '비행', 'aviator', 'crash', '크래시'], fn: handleAviator },
   { keys: ['런치', 'lunch', '점심', '메뉴', '점심메뉴'], fn: handleLunch },
   { keys: ['런치전체', 'lunchall', '식단', '전체메뉴'], fn: handleLunchAll }
 ];
@@ -1273,6 +902,12 @@ bot.on('text', async (ctx, next) => {
   if (handleTextBet) {
     const handled = await handleTextBet(ctx, raw);
     if (handled) return; // 배팅 처리 완료 시 다음 미들웨어 건너뜀
+  }
+
+  // 🚀 Aviator 대기실 텍스트 배팅 감지 (예: "비행기 50000", "비행기 1억", "비행기 올인" 등)
+  if (handleTextAviatorBet) {
+    const handled = await handleTextAviatorBet(ctx, raw);
+    if (handled) return;
   }
 
   if (!raw.trim().startsWith('/')) return next();
@@ -1303,23 +938,15 @@ bot.command(['랭킹', 'rank', '순위', '부자'], cmdWrap(handleRank));
 bot.command(['런치', 'lunch', '점심', '메뉴'], cmdWrap(handleLunch));
 bot.command(['런치전체', 'lunchall', '식단', '전체메뉴'], cmdWrap(handleLunchAll));
 bot.command(['경마', 'race', '말', '달리기'], cmdWrap(handleRace));
-bot.command(['게임', 'game'], cmdWrap(handleLobby));
-bot.command(['끌올', 'up', 'pull'], cmdWrap(handlePullUp));
-bot.command(['시작', 'startgame'], cmdWrap(handleStartGame));
-bot.command(['투표', 'vote'], cmdWrap(handleVoteCmd));
-bot.command(['종료', 'stopgame'], cmdWrap(handleStopGame));
+bot.command(['비행기', '비행', 'aviator', 'crash', '크래시'], cmdWrap(handleAviator));
 
 // ==========================================
 // 📋 텔레그램 슬래시 메뉴 등록 (setMyCommands)
 // ==========================================
 const BOT_COMMANDS = [
   { command: 'help', description: '명령어 안내 (/헬프)' },
-  { command: 'game', description: '라이어 게임 대기실 열기 (/게임)' },
-  { command: 'startgame', description: '게임 시작 (/시작)' },
-  { command: 'vote', description: '라이어 투표판 열기 (/투표)' },
-  { command: 'up', description: '대기실 카드 끌어올리기 (/끌올)' },
-  { command: 'stopgame', description: '게임 강제 종료 (/종료)' },
-  { command: 'race', description: '경마 대회 열기 (/경마)' },
+  { command: 'race', description: '동물 달리기 대회 열기 (/경마)' },
+  { command: 'aviator', description: 'Aviator 비행기 탑승 (/비행기)' },
   { command: 'wallet', description: '내 포인트 잔액 (/지갑)' },
   { command: 'beg', description: '알바해서 포인트 충전 (/구걸)' },
   { command: 'title', description: '내 맞춤 칭호 도감 및 장착 (/칭호)' },

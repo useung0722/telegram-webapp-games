@@ -118,9 +118,12 @@ function recordRaceResult(winnerName, participantNames) {
     }
   }
   saveHorseStats();
+  recordDailyRace(winnerName, participantNames);
 }
 
 const { getUserSessionCount, incrementUserSession } = require('./user-session');
+const { recordDailyRace } = require('./daily-tracker');
+const { getAnimalModifier } = require('./auto-balancer');
 
 // 🐾 개성 넘치는 동물 선수 명단 & 고유 달리기 특성 (총 12종)
 const RACER_POOL = [
@@ -581,7 +584,20 @@ function initHorseRace(bot, helpers) {
             h.buffedOnce = true;
           }
 
-          // 2) 부자 배팅마 & 16판 이상 장기 플레이 유저: 자연스러운 미세 페이스 조절 (레이스 전체 단 1번)
+          // 2) 매일 07시 자동 밸런스 패치에 의한 일일 컨디션 가중치 적용
+          const mod = getAnimalModifier(h.name);
+          if (mod.stepBonusProb && !h.modBuffed && turn >= 2 && Math.random() < mod.stepBonusProb) {
+            outcome.step += 1;
+            h.modBuffed = true;
+          }
+          if (mod.nerfedProb && !h.modNerfed && turn >= 3 && Math.random() < mod.nerfedProb) {
+            if (outcome.step > 1) {
+              outcome.step -= 1;
+              h.modNerfed = true;
+            }
+          }
+
+          // 3) 부자 배팅마 & 16판 이상 장기 플레이 유저: 자연스러운 미세 페이스 조절 (레이스 전체 단 1번)
           const needsNerf = richTargetHorses.has(h.id) || veteranTargetHorses.has(h.id);
           if (needsNerf && !h.nerfedOnce && turn >= 3 && Math.random() < 0.28) {
             if (outcome.step > 1) {
