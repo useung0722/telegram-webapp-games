@@ -181,12 +181,12 @@
     .betting-control-bar {
       background: #f8f9fa;
       border-top: 2px solid #107c41;
-      padding: 6px 10px;
+      padding: 8px 12px;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
       flex-shrink: 0;
-      height: 145px;
+      min-height: 165px;
       box-sizing: border-box;
       z-index: 40;
     }
@@ -297,29 +297,56 @@
       cursor: not-allowed !important;
     }
 
-    /* 응원 바 */
+    /* 응원 바 (눈에 띄게 강조) */
     .reaction-bar-row {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
       gap: 6px;
-      padding-top: 2px;
+      padding: 6px 8px;
+      background: #ffffff;
+      border: 1px solid #d2d0ce;
+      border-radius: 4px;
+      margin-top: 2px;
+    }
+    .reaction-btn-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      overflow-x: auto;
+      padding-bottom: 2px;
     }
     .reaction-emoji-btn {
-      background: #ffffff;
-      border: 1px solid #e1dfdd;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 12px;
+      background: #f3f2f1;
+      border: 1px solid #c8c6c4;
+      border-radius: 14px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #323130;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .reaction-emoji-btn:hover {
+      background: #eef8f1;
+      border-color: #107c41;
+      color: #107c41;
+      transform: scale(1.06);
+    }
+    .reaction-emoji-btn:active {
+      transform: scale(0.95);
     }
     .chat-inline-input {
-      flex: 1;
+      width: 100%;
       border: 1px solid #d2d0ce;
-      border-radius: 12px;
-      padding: 3px 8px;
-      font-size: 10px;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-size: 11px;
       outline: none;
+      box-sizing: border-box;
     }
 
     /* 🚀 2. 엑셀 스킨 Aviator 캔버스 뷰 */
@@ -597,8 +624,10 @@
 
         <!-- 하단 실시간 응원 및 챗 -->
         <div class="reaction-bar-row">
-          <div style="display: flex; gap: 4px; align-items: center; overflow-x: auto;">
-            <span style="font-size: 10px; color: #605e5c; font-weight: bold; margin-right: 2px;">응원:</span>
+          <div class="reaction-btn-group">
+            <span style="font-size: 11px; color: #107c41; font-weight: bold; margin-right: 4px; display: flex; align-items: center; gap: 2px;">
+              📣 실시간 응원:
+            </span>
             <button class="reaction-emoji-btn" onclick="sendReaction('🔥')">🔥 불꽃</button>
             <button class="reaction-emoji-btn" onclick="sendReaction('👏')">👏 박수</button>
             <button class="reaction-emoji-btn" onclick="sendReaction('🚀')">🚀 부스터</button>
@@ -607,7 +636,7 @@
             <button class="reaction-emoji-btn" onclick="sendReaction('😱')">😱 멘붕</button>
             <button class="reaction-emoji-btn" onclick="sendReaction('💪')">💪 화이팅</button>
           </div>
-          <input type="text" id="chatMsgInput" class="chat-inline-input" placeholder="사내 응원 메시지 입력 후 Enter" onkeydown="if(event.key==='Enter') sendChatMessage()">
+          <input type="text" id="chatMsgInput" class="chat-inline-input" placeholder="사내 응원 메시지 입력 후 Enter (화면 공유)" onkeydown="if(event.key==='Enter') sendChatMessage()">
         </div>
       </div>
     </div>
