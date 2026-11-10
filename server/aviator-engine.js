@@ -86,6 +86,16 @@ class WebAviatorEngine {
       roomId,
       flightNo: flight.flightNo,
       bet: flight.bets[user.id],
+      betsList: Object.values(flight.bets).map(b => ({
+        userId: b.userId,
+        name: b.name,
+        amount: b.amount,
+        formattedAmount: formatKoreanNumber(b.amount),
+        isAllIn: b.isAllIn,
+        cashedOut: b.cashedOut
+      })),
+      totalBets: Object.values(flight.bets).reduce((sum, b) => sum + (b.amount || 0), 0),
+      formattedTotalBets: formatKoreanNumber(Object.values(flight.bets).reduce((sum, b) => sum + (b.amount || 0), 0)),
       userWallet: { points: wallet.points, formatted: formatKoreanNumber(wallet.points) }
     });
 
@@ -200,13 +210,30 @@ class WebAviatorEngine {
   }
 
   sanitizeFlight(flight) {
+    const betsList = Object.values(flight.bets).map(b => ({
+      userId: b.userId,
+      name: b.name,
+      amount: b.amount,
+      formattedAmount: formatKoreanNumber(b.amount),
+      isAllIn: b.isAllIn,
+      cashedOut: b.cashedOut,
+      cashOutMultiplier: b.cashOutMultiplier,
+      payout: b.payout,
+      formattedPayout: formatKoreanNumber(b.payout)
+    }));
+
+    const totalBets = Object.values(flight.bets).reduce((sum, b) => sum + (b.amount || 0), 0);
+
     return {
       roomId: flight.roomId,
       flightNo: flight.flightNo,
       state: flight.state,
       multiplier: flight.multiplier,
       startTime: flight.startTime,
-      betsCount: Object.keys(flight.bets).length
+      betsCount: Object.keys(flight.bets).length,
+      totalBets,
+      formattedTotalBets: formatKoreanNumber(totalBets),
+      betsList
     };
   }
 }

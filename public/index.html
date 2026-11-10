@@ -29,8 +29,57 @@
       position: relative;
     }
 
-    /* 엑셀 녹색 타이틀바 */
-    .excel-header {
+    /* 모바일 & 텔레그램 웹앱 반응형 최적화 */
+    @media (max-width: 480px) {
+      .excel-header {
+        padding: 4px 8px;
+        font-size: 10px;
+      }
+      .excel-title span:last-child {
+        max-width: 190px;
+      }
+      .ribbon-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+      .ribbon-tab {
+        padding: 4px 8px;
+        font-size: 10px;
+      }
+      .formula-bar {
+        padding: 2px 6px;
+      }
+      .cell-name-box {
+        min-width: 40px;
+        font-size: 10px;
+      }
+      .betting-control-bar {
+        min-height: 175px;
+        padding: 6px 8px;
+      }
+      .bet-card-btn {
+        padding: 4px 2px;
+      }
+      .bet-card-title {
+        font-size: 10px;
+      }
+      .bet-input {
+        font-size: 9px;
+        padding: 2px;
+      }
+      .btn-bet-confirm {
+        font-size: 9px;
+        padding: 3px;
+      }
+      .aviator-view-container {
+        padding: 10px;
+        gap: 8px;
+      }
+      .aviator-multiplier-val {
+        font-size: 3rem;
+      }
+    }
       background: #107c41;
       color: #ffffff;
       padding: 6px 12px;
@@ -351,18 +400,28 @@
 
     /* 🚀 2. 엑셀 스킨 Aviator 캔버스 뷰 */
     .aviator-view-container {
-      padding: 16px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       background: #ffffff;
       flex: 1;
       overflow-y: auto;
     }
+    .aviator-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+      padding: 6px 10px;
+      border: 1px solid #d2d0ce;
+      border-radius: 4px;
+      font-size: 11px;
+    }
     .aviator-chart-wrapper {
       position: relative;
       width: 100%;
-      height: 280px;
+      height: 250px;
       border: 1px solid #d2d0ce;
       background: #faf9f8;
       border-radius: 4px;
@@ -375,7 +434,7 @@
     }
     .aviator-hud-overlay {
       position: absolute;
-      top: 20px;
+      top: 15px;
       left: 0;
       right: 0;
       display: flex;
@@ -384,7 +443,7 @@
       pointer-events: none;
     }
     .aviator-multiplier-val {
-      font-size: 4rem;
+      font-size: 3.8rem;
       font-weight: bold;
       color: #107c41;
       font-family: Consolas, monospace;
@@ -392,6 +451,21 @@
     }
     .aviator-multiplier-val.crashed {
       color: #a80000;
+    }
+    .aviator-live-bettors-box {
+      border: 1px solid #d2d0ce;
+      border-radius: 4px;
+      background: #faf9f8;
+      padding: 6px 10px;
+      max-height: 90px;
+      overflow-y: auto;
+    }
+    .aviator-bettor-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      padding: 2px 0;
+      border-bottom: 1px dashed #edebe9;
     }
 
     /* 🍱 5. 엑셀 점심 식단 뷰 */
@@ -644,23 +718,54 @@
     <!-- [TAB 2] 🚀 엑셀 스타일 Aviator 비행기 (상승 곡선 캔버스) -->
     <div id="view-aviator" class="tab-view">
       <div class="aviator-view-container">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="color: #107c41;">📈 실시간 물류 가속 곡선 분석 지표 (Aviator)</h3>
-          <span id="flightBadge" style="padding: 2px 8px; border-radius: 4px; background: #eef8f1; color: #107c41; font-weight: bold;">탑승 수속 중</span>
+        <!-- 상단 내 지갑 & 전체 판돈 바 -->
+        <div class="aviator-top-bar">
+          <div>
+            <strong>💼 내 지갑:</strong>
+            <span class="user-point-badge" id="avUserPoints" onclick="openProfileModal()">0 P</span>
+          </div>
+          <div>
+            <span style="color: #605e5c;">총 탑승:</span>
+            <strong style="color: #107c41;" id="avTotalPool">0 P (0명)</strong>
+          </div>
+          <span id="flightBadge" style="padding: 2px 6px; border-radius: 4px; background: #eef8f1; color: #107c41; font-weight: bold; font-size: 10px;">탑승 수속 중</span>
         </div>
 
         <div class="aviator-chart-wrapper" id="aviatorChartWrap">
           <canvas id="aviatorCanvas"></canvas>
+          <div class="reaction-overlay" id="avReactionOverlay"></div>
           <div class="aviator-hud-overlay">
             <div class="aviator-multiplier-val" id="aviatorMult">1.00x</div>
             <div id="aviatorSubText" style="color: #605e5c; font-size: 11px;">탑승 준비 중...</div>
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <input type="number" id="aviatorInput" placeholder="탑승 배팅금 (예: 50000)" style="flex: 1; padding: 8px; border: 1px solid #d2d0ce; border-radius: 2px; font-family: Consolas, monospace;">
-          <button id="btnAviatorBet" style="background: #107c41; color: white; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 2px;" onclick="submitAviatorBet()">탑승권 구매</button>
-          <button id="excelCashoutBtn" style="background: #d83b01; color: white; border: none; padding: 8px 20px; font-weight: bold; cursor: pointer; border-radius: 2px; display: none;" onclick="submitCashOut()">🪂 탈출 (익절)</button>
+        <!-- 실시간 다른 사람 탑승 목록 -->
+        <div class="aviator-live-bettors-box" id="aviatorBettorsList">
+          <div style="font-weight: bold; font-size: 10px; color: #605e5c; margin-bottom: 3px;">👥 실시간 탑승 명단</div>
+          <div id="bettorsRows"><span style="color:#a19f9d; font-size:10px;">아직 탑승객이 없습니다.</span></div>
+        </div>
+
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <input type="number" id="aviatorInput" placeholder="탑승 배팅금" style="flex: 1; padding: 7px; border: 1px solid #d2d0ce; border-radius: 2px; font-family: Consolas, monospace; font-size: 11px;">
+          <button class="btn-allin" style="padding: 6px 8px; font-size: 10px;" onclick="document.getElementById('aviatorInput').value = userWallet.points">올인</button>
+          <button id="btnAviatorBet" style="background: #107c41; color: white; border: none; padding: 7px 14px; font-weight: bold; cursor: pointer; border-radius: 2px; font-size: 11px;" onclick="submitAviatorBet()">탑승권 구매</button>
+          <button id="excelCashoutBtn" style="background: #d83b01; color: white; border: none; padding: 7px 18px; font-weight: bold; cursor: pointer; border-radius: 2px; display: none; font-size: 11px;" onclick="submitCashOut()">🪂 탈출</button>
+        </div>
+
+        <!-- 비행기 응원 툴바 -->
+        <div class="reaction-bar-row">
+          <div class="reaction-btn-group">
+            <span style="font-size: 11px; color: #107c41; font-weight: bold; margin-right: 4px; display: flex; align-items: center; gap: 2px;">
+              📣 비행 응원:
+            </span>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🚀')">🚀 떡상</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🪂')">🪂 탈출해!</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('💸')">💸 익절</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('😱')">😱 멈춰!</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🔥')">🔥 가즈아</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🎉')">🎉 잭팟</button>
+          </div>
         </div>
       </div>
     </div>
@@ -818,6 +923,17 @@
       }
       if (event === 'aviator_boarding' || (event === 'init_state' && data.aviator && data.aviator.state === 'boarding')) {
         updateAviatorBoarding(data.aviator || data);
+      }
+      if (event === 'aviator_bet_placed') {
+        if (data.formattedTotalBets) {
+          document.getElementById('avTotalPool').innerText = `${data.formattedTotalBets} P (${(data.betsList || []).length}명)`;
+        }
+        if (data.betsList) {
+          renderAviatorBettors(data.betsList);
+        }
+      }
+      if (event === 'aviator_cashed_out') {
+        loadWallet();
       }
       if (event === 'aviator_takeoff') {
         updateAviatorTakeoff();
@@ -1100,7 +1216,27 @@
       document.getElementById('aviatorSubText').innerText = '15초 후 출발합니다...';
       document.getElementById('btnAviatorBet').disabled = false;
       document.getElementById('excelCashoutBtn').style.display = 'none';
+      if (data.formattedTotalBets) {
+        document.getElementById('avTotalPool').innerText = `${data.formattedTotalBets} P (${data.betsCount || 0}명)`;
+      }
+      if (data.betsList) {
+        renderAviatorBettors(data.betsList);
+      }
       drawAviatorChart();
+    }
+
+    function renderAviatorBettors(betsList) {
+      const container = document.getElementById('bettorsRows');
+      if (!betsList || betsList.length === 0) {
+        container.innerHTML = '<span style="color:#a19f9d; font-size:10px;">아직 탑승객이 없습니다.</span>';
+        return;
+      }
+      container.innerHTML = betsList.map(b => `
+        <div class="aviator-bettor-row">
+          <span><strong>${b.name}</strong> ${b.isAllIn ? '<span style="color:#d83b01; font-weight:bold;">[올인]</span>' : ''}</span>
+          <span style="font-family: Consolas;">${b.formattedAmount} P ${b.cashedOut ? `→ <strong style="color:#107c41;">+${b.formattedPayout} P (${b.cashOutMultiplier}x)</strong>` : '<span style="color:#605e5c;">비행 중...</span>'}</span>
+        </div>
+      `).join('');
     }
 
     function updateAviatorTakeoff() {
@@ -1132,6 +1268,7 @@
       loadWallet();
     }
 
+    // 🚀 비행기 지수 상승 + 크기 확대 + 중앙 이동 + 고속 흔들림 렌더러
     function drawAviatorChart(isCrashed = false) {
       if (!avCtx || avW <= 0 || avH <= 0) return;
       avCtx.clearRect(0, 0, avW, avH);
@@ -1148,8 +1285,8 @@
 
       if (aviatorHistory.length === 0) return;
 
-      const maxMult = Math.max(2.0, currentMultiplier * 1.2);
-      const getX = (idx) => Math.min(avW - 40, (idx / Math.max(100, aviatorHistory.length)) * (avW - 60) + 20);
+      const maxMult = Math.max(2.0, currentMultiplier * 1.25);
+      const getX = (idx) => Math.min(avW - 40, (idx / Math.max(80, aviatorHistory.length)) * (avW - 60) + 20);
       const getY = (m) => avH - 20 - ((m - 1) / (maxMult - 1)) * (avH - 60);
 
       // 면적 채우기
@@ -1158,9 +1295,9 @@
       for (let i = 0; i < aviatorHistory.length; i++) {
         avCtx.lineTo(getX(i), getY(aviatorHistory[i].mult));
       }
-      const lastX = getX(aviatorHistory.length - 1);
-      const lastY = getY(currentMultiplier);
-      avCtx.lineTo(lastX, avH - 20);
+      const rawLastX = getX(aviatorHistory.length - 1);
+      const rawLastY = getY(currentMultiplier);
+      avCtx.lineTo(rawLastX, avH - 20);
       avCtx.closePath();
 
       const grad = avCtx.createLinearGradient(0, 0, 0, avH);
@@ -1184,11 +1321,34 @@
       avCtx.lineWidth = 3;
       avCtx.stroke();
 
-      // 비행기 아이콘
-      avCtx.font = '24px sans-serif';
+      // 비행기 크기 & 위치 & 고속 진동 (빠른 흔들림) 계산
+      // 배수가 오를수록 24px -> 최대 48px까지 커짐
+      const planeSize = Math.min(48, 24 + (currentMultiplier - 1.0) * 8);
+
+      // 어느 정도 커지면(배수 2.5x 이상) 점차 화면 중앙 쪽으로 이동 보정
+      let targetPlaneX = rawLastX + 10;
+      let targetPlaneY = rawLastY - 10;
+      if (currentMultiplier > 2.0 && isFlying) {
+        const centerRatio = Math.min(1.0, (currentMultiplier - 2.0) / 4.0); // 2x~6x에서 중앙 보정
+        const midX = avW * 0.5;
+        const midY = avH * 0.5;
+        targetPlaneX = targetPlaneX * (1 - centerRatio * 0.5) + midX * (centerRatio * 0.5);
+        targetPlaneY = targetPlaneY * (1 - centerRatio * 0.5) + midY * (centerRatio * 0.5);
+      }
+
+      // 빠른 속도감의 고주파 지터 흔들림
+      let shakeX = 0;
+      let shakeY = 0;
+      if (isFlying && !isCrashed) {
+        const shakeIntensity = Math.min(4.5, 1.5 + (currentMultiplier - 1.0) * 0.5);
+        shakeX = (Math.random() - 0.5) * shakeIntensity * 2;
+        shakeY = (Math.random() - 0.5) * shakeIntensity * 2;
+      }
+
+      avCtx.font = `${Math.floor(planeSize)}px sans-serif`;
       avCtx.textAlign = 'center';
       avCtx.textBaseline = 'middle';
-      avCtx.fillText(isCrashed ? '💥' : '✈️', lastX + 10, lastY - 10);
+      avCtx.fillText(isCrashed ? '💥' : '✈️', targetPlaneX + shakeX, targetPlaneY + shakeY);
     }
 
     function submitAviatorBet() {
@@ -1293,6 +1453,8 @@
       if (data.ok) {
         userWallet = data.wallet;
         document.getElementById('userPointsDisplay').innerText = `${currentUserName} (${data.wallet.formattedPoints} P)`;
+        const avBadge = document.getElementById('avUserPoints');
+        if (avBadge) avBadge.innerText = `${data.wallet.formattedPoints} P`;
       }
     }
 
@@ -1409,7 +1571,10 @@
 
     // 실시간 공유되는 응원 이모지 (좌 / 중 / 우 랜덤 등장)
     function spawnFloatingEmoji(emoji, lanePosition = 'center', senderName = '') {
-      const overlay = document.getElementById('reactionOverlay');
+      // 경마 탭과 비행기 탭 모두 지원
+      const overlay = document.getElementById('view-aviator').classList.contains('active')
+        ? document.getElementById('avReactionOverlay')
+        : document.getElementById('reactionOverlay');
       if (!overlay) return;
 
       const el = document.createElement('div');
