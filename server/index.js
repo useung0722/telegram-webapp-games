@@ -18,6 +18,7 @@ const {
 const { WebHorseRaceEngine } = require('./race-engine');
 const { WebAviatorEngine } = require('./aviator-engine');
 const { SpyfallEngine } = require('./spyfall-engine');
+const { getTodayMenu, voteLunch, getVotes } = require('./lunch-manager');
 
 const app = express();
 const server = http.createServer(app);
@@ -28,7 +29,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// 전체 접속 클라이언트에게 웹소켓 이벤트 전송
 function broadcast(event, data) {
   const payload = JSON.stringify({ event, data, timestamp: Date.now() });
   for (const client of wss.clients) {
@@ -43,7 +43,6 @@ const raceEngine = new WebHorseRaceEngine(broadcast);
 const aviatorEngine = new WebAviatorEngine(broadcast);
 const spyfallEngine = new SpyfallEngine(broadcast);
 
-// 최초 경기 및 비행 생성
 raceEngine.createRace('global');
 aviatorEngine.createFlight('global');
 
@@ -137,7 +136,31 @@ app.get('/api/ranking', (req, res) => {
   res.json({ ok: true, rankings: getTopRankings(10) });
 });
 
-// 5. 현재 게임 상태 스냅샷
+// 5. 점심 식단 조회 및 투표
+app.get('/api/lunch', async (req, res) => {
+  const result = await getTodayMenu();
+  if (!result.ok) {
+    return res.status(500).json(result);
+  }
+  const dateKey = result.day ? `${result.day.date}_${result.day.dow}` : 'today';
+  res.json({
+    ok: true,
+    day: result.day,
+    votes: getVotes(dateKey)
+  });
+});
+
+app.post('/api/lunch/vote', (req, res) => {
+  const { date, corner, userId } = req.body;
+  if (!date || !corner || !userId) {
+    return res.status(400).json({ ok: false, error: '잘못된 파라미터입니다.' });
+  }
+  const updatedVotes = voteLunch(date, corner, userId);
+  broadcast('lunch_voted', { date, votes: updatedVotes });
+  res.json({ ok: true, votes: updatedVotes });
+});
+
+// 6. 현재 게임 상태 스냅샷
 app.get('/api/games/status', (req, res) => {
   const currentRace = raceEngine.getCurrentRace('global');
   const currentFlight = aviatorEngine.getCurrentFlight('global');
@@ -156,7 +179,6 @@ wss.on('connection', (ws) => {
   ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
 
-  // 연결 시 초기 상태 전송
   const currentRace = raceEngine.getCurrentRace('global');
   const currentFlight = aviatorEngine.getCurrentFlight('global');
   ws.send(JSON.stringify({
@@ -172,27 +194,23 @@ wss.on('connection', (ws) => {
       const { type, payload } = JSON.parse(messageStr);
       const user = payload.user || { id: 'guest', name: '익명' };
 
-      // 🏇 경마 배팅
       if (type === 'race_bet') {
         const { horseId, amount, isAllIn } = payload;
         const result = raceEngine.placeBet('global', user, horseId, amount, isAllIn);
         ws.send(JSON.stringify({ event: 'race_bet_result', data: result }));
       }
 
-      // 🚀 에비에이터 배팅
       if (type === 'aviator_bet') {
         const { amount, isAllIn } = payload;
         const result = aviatorEngine.placeBet('global', user, amount, isAllIn);
         ws.send(JSON.stringify({ event: 'aviator_bet_result', data: result }));
       }
 
-      // 🚀 에비에이터 탈출
       if (type === 'aviator_cashout') {
         const result = aviatorEngine.cashOut('global', user);
         ws.send(JSON.stringify({ event: 'aviator_cashout_result', data: result }));
       }
 
-      // 💬 실시간 채팅
       if (type === 'chat') {
         broadcast('chat_message', {
           user: user.name,
@@ -206,7 +224,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Heartbeat
 const interval = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (!ws.isAlive) return ws.terminate();

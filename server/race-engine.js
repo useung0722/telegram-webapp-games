@@ -43,7 +43,6 @@ function getHorseCurrentOdds(racer) {
   return Math.round(clamped * 10) / 10;
 }
 
-// 시드 기반 32비트 난수 생성기
 function mulberry32(a) {
   return function() {
     var t = a += 0x6D2B79F5;
@@ -56,8 +55,8 @@ function mulberry32(a) {
 class WebHorseRaceEngine {
   constructor(broadcastFn) {
     this.broadcast = broadcastFn;
-    this.FINISH_LINE = 15; // 엑셀 세로 15행
-    this.BETTING_DURATION_MS = 25000; // 25초 배팅 카운트다운
+    this.FINISH_LINE = 15;
+    this.BETTING_DURATION_MS = 25000;
     this.races = {};
     this.raceCounter = 101;
   }
@@ -76,15 +75,13 @@ class WebHorseRaceEngine {
     const seed = Math.floor(Math.random() * 900000) + 100000;
     const now = Date.now();
 
-    // 60FPS 세로 물리 타임라인 사전 시뮬레이션
     const rnd = mulberry32(seed);
     const DT = 1 / 60;
     const profiles = selectedRacers.map(r => ({
       name: r.name,
       pos: 0,
       vel: 0.15,
-      baseSpeed: 1.1 + rnd() * 0.15,
-      effect: ''
+      baseSpeed: 1.1 + rnd() * 0.15
     }));
 
     let winnerIdx = -1;
@@ -101,16 +98,16 @@ class WebHorseRaceEngine {
         let targetSpeed = p.baseSpeed;
         if (p.name === '치타') targetSpeed = curTime < 4.5 ? 2.2 : 0.82;
         else if (p.name === '경주마') targetSpeed = 1.25 + Math.sin(curTime * 1.5) * 0.12;
-        else if (p.name === '호랑이') { if (curTime > 3 && curTime < 6) { targetSpeed = 1.75; p.effect = '🔥'; } }
-        else if (p.name === '늑대') { targetSpeed = curTime > 5 ? 1.65 : 0.95; if (curTime > 5) p.effect = '🌪️'; }
-        else if (p.name === '토끼') { const cycle = curTime % 4; targetSpeed = cycle < 2.5 ? 1.7 : 0.35; p.effect = cycle >= 2.5 ? '💤' : '💨'; }
+        else if (p.name === '호랑이') { if (curTime > 3 && curTime < 6) targetSpeed = 1.75; }
+        else if (p.name === '늑대') { targetSpeed = curTime > 5 ? 1.65 : 0.95; }
+        else if (p.name === '토끼') { const cycle = curTime % 4; targetSpeed = cycle < 2.5 ? 1.7 : 0.35; }
         else if (p.name === '돼지') targetSpeed = 1.15;
-        else if (p.name === '거북이') { if (curTime < 6.5) targetSpeed = 0.55; else { targetSpeed = 2.45; p.effect = '🚀'; } }
-        else if (p.name === '달팽이') { targetSpeed = (curTime > 7 && curTime < 9.5) ? 2.8 : 0.45; if (curTime > 7 && curTime < 9.5) p.effect = '⚡️'; }
-        else if (p.name === '새') { targetSpeed = (curTime > 5 && rnd() < 0.6) ? 3.0 : 0.35; if (targetSpeed > 2.0) p.effect = '🦅'; }
+        else if (p.name === '거북이') { targetSpeed = curTime < 6.5 ? 0.55 : 2.45; }
+        else if (p.name === '달팽이') { targetSpeed = (curTime > 7 && curTime < 9.5) ? 2.8 : 0.45; }
+        else if (p.name === '새') { targetSpeed = (curTime > 5 && rnd() < 0.6) ? 3.0 : 0.35; }
         else if (p.name === '원숭이') targetSpeed = 1.2 + Math.cos(curTime * 2) * 0.25;
         else if (p.name === '가재') targetSpeed = 1.35;
-        else if (p.name === '치와와') { targetSpeed = curTime < 2 ? 2.4 : 1.0; if (curTime < 2) p.effect = '🚨'; }
+        else if (p.name === '치와와') { targetSpeed = curTime < 2 ? 2.4 : 1.0; }
 
         targetSpeed += (rnd() - 0.5) * 0.12;
         p.vel += (targetSpeed - p.vel) * 0.08;
@@ -139,7 +136,7 @@ class WebHorseRaceEngine {
       roomId,
       raceNo: this.raceCounter++,
       seed,
-      state: 'betting', // 'betting' | 'racing' | 'finished'
+      state: 'betting',
       createdAt: now,
       startTime: now + this.BETTING_DURATION_MS,
       horses: selectedRacers.map((r, idx) => ({
@@ -149,7 +146,8 @@ class WebHorseRaceEngine {
         title: r.title,
         dept: r.dept,
         odds: getHorseCurrentOdds(r),
-        pos: 0
+        totalBets: 0,
+        bettorsCount: 0
       })),
       bets: {},
       winnerIdx: (winnerIdx !== -1 ? winnerIdx : 0),
@@ -161,7 +159,6 @@ class WebHorseRaceEngine {
     this.races[roomId] = race;
     this.broadcast('excel_race_created', this.sanitizeRace(race));
 
-    // 배팅 마감 카운트다운 타이머
     race.timer = setTimeout(() => {
       this.startRace(roomId);
     }, this.BETTING_DURATION_MS);
@@ -197,6 +194,12 @@ class WebHorseRaceEngine {
     if (wallet.points === 0) wallet.bankruptHit = true;
     saveWallets();
 
+    // 집계 갱신
+    horse.totalBets = (horse.totalBets || 0) + betAmount;
+    if (!race.bets[user.id]) {
+      horse.bettorsCount = (horse.bettorsCount || 0) + 1;
+    }
+
     race.bets[user.id] = {
       userId: user.id,
       name: user.name,
@@ -210,6 +213,12 @@ class WebHorseRaceEngine {
       roomId,
       raceNo: race.raceNo,
       bet: race.bets[user.id],
+      horses: race.horses.map(h => ({
+        id: h.id,
+        totalBets: h.totalBets || 0,
+        formattedBets: formatKoreanNumber(h.totalBets || 0),
+        bettorsCount: h.bettorsCount || 0
+      })),
       userWallet: { points: wallet.points, formatted: formatKoreanNumber(wallet.points) }
     });
 
@@ -232,7 +241,6 @@ class WebHorseRaceEngine {
       durationMs: race.raceDurationMs
     });
 
-    // 레이스 완주 시간에 맞춰 정산
     setTimeout(() => {
       this.finishRace(roomId, race);
     }, race.raceDurationMs + 500);
@@ -242,7 +250,6 @@ class WebHorseRaceEngine {
     race.state = 'finished';
     const winner = race.horses[race.winnerIdx];
 
-    // 스탯 업데이트
     for (const h of race.horses) {
       if (!horseStats[h.name]) horseStats[h.name] = { wins: 0, losses: 0 };
       if (h.id === winner.id) {
@@ -253,7 +260,6 @@ class WebHorseRaceEngine {
     }
     saveHorseStats();
 
-    // 배팅 정산
     const payouts = [];
     for (const [userId, bet] of Object.entries(race.bets)) {
       const wallet = getWallet(userId, bet.name);
@@ -303,7 +309,6 @@ class WebHorseRaceEngine {
       payouts
     });
 
-    // 10초 후 다음 세로 엑셀 레이스 자동 오픈
     setTimeout(() => {
       this.createRace(roomId);
     }, 10000);
@@ -323,7 +328,10 @@ class WebHorseRaceEngine {
         emoji: h.emoji,
         title: h.title,
         dept: h.dept,
-        odds: h.odds
+        odds: h.odds,
+        totalBets: h.totalBets || 0,
+        formattedBets: formatKoreanNumber(h.totalBets || 0),
+        bettorsCount: h.bettorsCount || 0
       })),
       betsCount: Object.keys(race.bets).length
     };

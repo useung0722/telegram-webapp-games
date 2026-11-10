@@ -57,7 +57,7 @@
       flex-shrink: 0;
     }
 
-    /* 리본 탭 (상단 메뉴 바) */
+    /* 리본 탭 */
     .ribbon-tabs {
       background: #107c41;
       display: flex;
@@ -121,7 +121,7 @@
       text-overflow: ellipsis;
     }
 
-    /* 탭 본문 뷰 영역 */
+    /* 탭 본문 뷰 */
     .tab-view {
       display: none;
       flex: 1;
@@ -204,6 +204,7 @@
       border-radius: 10px;
       font-weight: bold;
       font-family: Consolas, monospace;
+      cursor: pointer;
     }
     .btn-beg {
       background: #fff4ce;
@@ -233,6 +234,7 @@
       align-items: center;
       gap: 2px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      position: relative;
     }
     .bet-card-title {
       font-weight: bold;
@@ -245,6 +247,12 @@
       color: #d83b01;
       font-weight: bold;
       font-size: 10px;
+    }
+    .bet-stat-pool {
+      font-size: 9px;
+      color: #107c41;
+      font-weight: bold;
+      font-family: Consolas, monospace;
     }
     .bet-input-wrap {
       display: flex;
@@ -283,6 +291,11 @@
       cursor: pointer;
       margin-top: 2px;
     }
+    .btn-bet-confirm:disabled, .btn-allin:disabled, .bet-input:disabled {
+      background: #f3f2f1 !important;
+      color: #a19f9d !important;
+      cursor: not-allowed !important;
+    }
 
     /* 응원 바 */
     .reaction-bar-row {
@@ -309,52 +322,125 @@
       outline: none;
     }
 
-    /* 🚀 2. 엑셀 스킨 Aviator 뷰 */
+    /* 🚀 2. 엑셀 스킨 Aviator 캔버스 뷰 */
     .aviator-view-container {
-      padding: 20px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
       background: #ffffff;
       flex: 1;
+      overflow-y: auto;
     }
-    .excel-chart-box {
+    .aviator-chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 280px;
       border: 1px solid #d2d0ce;
       background: #faf9f8;
       border-radius: 4px;
-      height: 320px;
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       overflow: hidden;
     }
-    .excel-grid-lines {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-size: 30px 30px;
-      background-image: 
-        linear-gradient(to right, #edebe9 1px, transparent 1px),
-        linear-gradient(to bottom, #edebe9 1px, transparent 1px);
+    canvas#aviatorCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
-    .aviator-multiplier-excel {
-      font-size: 3.5rem;
+    .aviator-hud-overlay {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+    .aviator-multiplier-val {
+      font-size: 4rem;
       font-weight: bold;
       color: #107c41;
-      z-index: 10;
       font-family: Consolas, monospace;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .aviator-multiplier-excel.crashed {
+    .aviator-multiplier-val.crashed {
       color: #a80000;
     }
-    .flight-plane-excel {
-      position: absolute;
-      font-size: 2.5rem;
-      transition: all 0.1s linear;
-      z-index: 8;
+
+    /* 🍱 5. 엑셀 점심 식단 뷰 */
+    .lunch-view-container {
+      padding: 16px;
+      background: #ffffff;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .lunch-header-badge {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f3f2f1;
+      padding: 8px 12px;
+      border-left: 4px solid #107c41;
+    }
+    .lunch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .corner-card {
+      border: 1px solid #d2d0ce;
+      border-radius: 4px;
+      padding: 12px;
+      background: #faf9f8;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .corner-title {
+      font-weight: bold;
+      font-size: 13px;
+      color: #107c41;
+      border-bottom: 1px solid #edebe9;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .corner-items {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .corner-items li {
+      font-size: 11px;
+      color: #323130;
+    }
+    .btn-lunch-vote {
+      background: #107c41;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .btn-lunch-vote.voted {
+      background: #fed9cc;
+      color: #d83b01;
+      border: 1px solid #f8c2b0;
     }
 
-    /* 엑셀 하단 시트 탭 바 */
+    /* 하단 엑셀 시트 탭 바 */
     .sheet-tab-bar {
       background: #f3f2f1;
       border-top: 1px solid #d2d0ce;
@@ -364,6 +450,7 @@
       gap: 2px;
       font-size: 11px;
       flex-shrink: 0;
+      overflow-x: auto;
     }
     .sheet-tab {
       padding: 4px 14px;
@@ -373,12 +460,47 @@
       border-bottom: none;
       cursor: pointer;
       border-radius: 2px 2px 0 0;
+      white-space: nowrap;
     }
     .sheet-tab.active {
       background: #ffffff;
       color: #107c41;
       font-weight: bold;
       border-top: 2px solid #107c41;
+    }
+
+    /* 팝업 모달 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .excel-modal {
+      background: #ffffff;
+      border: 1px solid #107c41;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      border-radius: 4px;
+      width: 90%;
+      max-width: 360px;
+      overflow: hidden;
+    }
+    .excel-modal-header {
+      background: #107c41;
+      color: white;
+      padding: 8px 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+    }
+    .excel-modal-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
   </style>
 </head>
@@ -403,6 +525,7 @@
       <button class="ribbon-tab active" onclick="switchMainTab('race')">파일</button>
       <button class="ribbon-tab" onclick="switchMainTab('race')">홈 (경마 시트)</button>
       <button class="ribbon-tab" onclick="switchMainTab('aviator')">삽입 (비행기 지표)</button>
+      <button class="ribbon-tab" onclick="switchMainTab('lunch')">수식 (사내 식단)</button>
       <button class="ribbon-tab" onclick="switchMainTab('ranking')">데이터 (사내 랭킹)</button>
       <button class="ribbon-tab" onclick="switchMainTab('titles')">검토 (칭호 도감)</button>
     </div>
@@ -427,19 +550,17 @@
       <div class="betting-control-bar">
         <div class="bet-header-row">
           <div>
-            <strong>💼 직원 자산:</strong>
-            <span class="user-point-badge" id="userPointsDisplay">0 P</span>
+            <strong>💼 사원:</strong>
+            <span class="user-point-badge" id="userPointsDisplay" onclick="openProfileModal()">플레이어 (0 P)</span>
             <button class="btn-beg" onclick="requestBeg()">🧹 탕비실 알바 (+5만)</button>
           </div>
-          <div style="color: #605e5c; font-size: 10px;" id="raceCountTimer">
-            ⏱️ 배팅 마감 카운트다운
+          <div style="color: #605e5c; font-size: 10px; font-weight: bold;" id="raceCountTimer">
+            ⏱️ 배팅 접수 중: 00:25
           </div>
         </div>
 
         <!-- 3마리 세로 레인 배팅 카드 -->
-        <div class="bet-cards-row" id="betCardsContainer">
-          <!-- 동적 렌더링 -->
-        </div>
+        <div class="bet-cards-row" id="betCardsContainer"></div>
 
         <!-- 하단 실시간 응원 및 챗 -->
         <div class="reaction-bar-row">
@@ -454,7 +575,7 @@
       </div>
     </div>
 
-    <!-- [TAB 2] 🚀 엑셀 스타일 Aviator 비행기 -->
+    <!-- [TAB 2] 🚀 엑셀 스타일 Aviator 비행기 (상승 곡선 캔버스) -->
     <div id="view-aviator" class="tab-view">
       <div class="aviator-view-container">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -462,21 +583,37 @@
           <span id="flightBadge" style="padding: 2px 8px; border-radius: 4px; background: #eef8f1; color: #107c41; font-weight: bold;">탑승 수속 중</span>
         </div>
 
-        <div class="excel-chart-box">
-          <div class="excel-grid-lines"></div>
-          <div class="aviator-multiplier-excel" id="aviatorMult">1.00x</div>
-          <div class="flight-plane-excel" id="excelPlane" style="bottom: 20px; left: 20px;">✈️</div>
+        <div class="aviator-chart-wrapper" id="aviatorChartWrap">
+          <canvas id="aviatorCanvas"></canvas>
+          <div class="aviator-hud-overlay">
+            <div class="aviator-multiplier-val" id="aviatorMult">1.00x</div>
+            <div id="aviatorSubText" style="color: #605e5c; font-size: 11px;">탑승 준비 중...</div>
+          </div>
         </div>
 
         <div style="display: flex; gap: 10px; align-items: center;">
           <input type="number" id="aviatorInput" placeholder="탑승 배팅금 (예: 50000)" style="flex: 1; padding: 8px; border: 1px solid #d2d0ce; border-radius: 2px; font-family: Consolas, monospace;">
-          <button style="background: #107c41; color: white; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 2px;" onclick="submitAviatorBet()">탑승권 구매</button>
+          <button id="btnAviatorBet" style="background: #107c41; color: white; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 2px;" onclick="submitAviatorBet()">탑승권 구매</button>
           <button id="excelCashoutBtn" style="background: #d83b01; color: white; border: none; padding: 8px 20px; font-weight: bold; cursor: pointer; border-radius: 2px; display: none;" onclick="submitCashOut()">🪂 탈출 (익절)</button>
         </div>
       </div>
     </div>
 
-    <!-- [TAB 3] 🏆 사내 부자 랭킹 -->
+    <!-- [TAB 3] 🍱 사내 점심 식단 뷰 -->
+    <div id="view-lunch" class="tab-view">
+      <div class="lunch-view-container">
+        <div class="lunch-header-badge">
+          <div>
+            <h3 style="color: #107c41;" id="lunchDateTitle">🍱 오늘 사내 점심 식단표</h3>
+            <div style="font-size: 10px; color: #605e5c;">메뉴를 확인하고 가장 당기는 코너에 사내 투표해보세요!</div>
+          </div>
+          <button class="btn-beg" onclick="fetchLunchMenu()">🔄 식단 새로고침</button>
+        </div>
+        <div class="lunch-grid" id="lunchGrid"></div>
+      </div>
+    </div>
+
+    <!-- [TAB 4] 🏆 사내 부자 랭킹 -->
     <div id="view-ranking" class="tab-view" style="padding: 20px; background: #ffffff;">
       <h3 style="color: #107c41; margin-bottom: 12px;">🏆 사내 부자 랭킹 TOP 10</h3>
       <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
@@ -492,7 +629,7 @@
       </table>
     </div>
 
-    <!-- [TAB 4] 🎖️ 맞춤 칭호 도감 -->
+    <!-- [TAB 5] 🎖️ 맞춤 칭호 도감 -->
     <div id="view-titles" class="tab-view" style="padding: 20px; background: #ffffff;">
       <h3 style="color: #107c41; margin-bottom: 12px;">🎖️ 사내 맞춤 칭호 도감</h3>
       <div id="titlesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;"></div>
@@ -502,16 +639,36 @@
     <div class="sheet-tab-bar">
       <div class="sheet-tab active" id="sheetTab-race" onclick="switchMainTab('race')">Sheet1_경마달리기</div>
       <div class="sheet-tab" id="sheetTab-aviator" onclick="switchMainTab('aviator')">Sheet2_비행가속곡선</div>
-      <div class="sheet-tab" id="sheetTab-ranking" onclick="switchMainTab('ranking')">Sheet3_사내랭킹</div>
-      <div class="sheet-tab" id="sheetTab-titles" onclick="switchMainTab('titles')">Sheet4_칭호도감</div>
+      <div class="sheet-tab" id="sheetTab-lunch" onclick="switchMainTab('lunch')">Sheet3_사내점심식단</div>
+      <div class="sheet-tab" id="sheetTab-ranking" onclick="switchMainTab('ranking')">Sheet4_사내랭킹</div>
+      <div class="sheet-tab" id="sheetTab-titles" onclick="switchMainTab('titles')">Sheet5_칭호도감</div>
       <span style="color: #605e5c; margin-left: 10px;">Ready | 100% ⊞</span>
     </div>
   </div>
 
+  <!-- 프로필 설정 모달 -->
+  <div class="modal-overlay" id="profileModal">
+    <div class="excel-modal">
+      <div class="excel-modal-header">
+        <span>👤 직원 프로필 설정</span>
+        <span style="cursor: pointer;" onclick="closeProfileModal()">✕</span>
+      </div>
+      <div class="excel-modal-body">
+        <div>
+          <label style="font-weight: bold; color: #323130;">사내 닉네임</label>
+          <input type="text" id="modalNicknameInput" style="width: 100%; padding: 6px; border: 1px solid #d2d0ce; margin-top: 4px;">
+        </div>
+        <div style="font-size: 10px; color: #605e5c;">
+          ID: <span id="modalUserId"></span>
+        </div>
+        <button style="background: #107c41; color: white; border: none; padding: 6px; font-weight: bold; cursor: pointer;" onclick="saveProfile()">저장 완료</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 유저 계정 정보 유지
     let currentUserId = localStorage.getItem('excel_user_id') || ('user_' + Math.floor(Math.random() * 90000 + 10000));
-    let currentUserName = localStorage.getItem('excel_user_name') || prompt('사용하실 사내 닉네임을 입력해주세요:', '직원_' + currentUserId.slice(-4)) || '익명';
+    let currentUserName = localStorage.getItem('excel_user_name') || '직원_' + currentUserId.slice(-4);
     localStorage.setItem('excel_user_id', currentUserId);
     localStorage.setItem('excel_user_name', currentUserName);
 
@@ -521,27 +678,45 @@
     let raceStartTime = null;
     let raceTimeline = [];
     let raceTotalDuration = 12;
+    let countdownInterval = null;
 
-    // 캔버스 세로 엑셀 레이서 렌더러
-    const canvas = document.getElementById('raceCanvas');
-    const ctx = canvas.getContext('2d');
+    // 1. 경마 캔버스 설정
+    const raceCanvas = document.getElementById('raceCanvas');
+    const raceCtx = raceCanvas.getContext('2d');
     let viewW = 0, viewH = 0;
-
     const ROW_H = 26;
     const HEADER_H = 28;
     const ROW_HEADER_W = 38;
     const TOTAL_ROWS = 15;
 
-    function resizeCanvas() {
+    // 2. 에비에이터 캔버스 설정
+    const aviatorCanvas = document.getElementById('aviatorCanvas');
+    const avCtx = aviatorCanvas.getContext('2d');
+    let avW = 0, avH = 0;
+    let currentMultiplier = 1.00;
+    let aviatorHistory = [];
+    let isFlying = false;
+
+    function resizeCanvases() {
       const vp = document.getElementById('viewport');
-      if (!vp) return;
-      viewW = vp.clientWidth;
-      viewH = vp.clientHeight;
-      canvas.width = viewW;
-      canvas.height = viewH;
-      drawExcelSheet();
+      if (vp) {
+        viewW = vp.clientWidth;
+        viewH = vp.clientHeight;
+        raceCanvas.width = viewW;
+        raceCanvas.height = viewH;
+        drawExcelSheet();
+      }
+
+      const avWrap = document.getElementById('aviatorChartWrap');
+      if (avWrap) {
+        avW = avWrap.clientWidth;
+        avH = avWrap.clientHeight;
+        aviatorCanvas.width = avW;
+        aviatorCanvas.height = avH;
+        drawAviatorChart();
+      }
     }
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', resizeCanvases);
 
     // WebSocket 연결
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -549,7 +724,8 @@
 
     ws.onopen = () => {
       loadWallet();
-      resizeCanvas();
+      resizeCanvases();
+      fetchLunchMenu();
     };
 
     ws.onmessage = (e) => {
@@ -562,18 +738,20 @@
         currentRace = data.race || data;
         setupRace(currentRace);
       }
+      if (event === 'excel_race_bet_placed') {
+        if (data.horses) updateBetCardPools(data.horses);
+      }
       if (event === 'excel_race_started') {
         startVerticalRace(data.seed, data.durationMs);
       }
       if (event === 'excel_race_finished') {
         finishVerticalRace(data.winner);
       }
-      if (event === 'aviator_boarding') {
-        updateAviatorBoarding(data);
+      if (event === 'aviator_boarding' || (event === 'init_state' && data.aviator && data.aviator.state === 'boarding')) {
+        updateAviatorBoarding(data.aviator || data);
       }
       if (event === 'aviator_takeoff') {
-        document.getElementById('flightBadge').innerText = '비행 중! 💨';
-        document.getElementById('flightBadge').style.color = '#107c41';
+        updateAviatorTakeoff();
       }
       if (event === 'aviator_tick') {
         updateAviatorTick(data.multiplier);
@@ -581,13 +759,29 @@
       if (event === 'aviator_crashed') {
         updateAviatorCrash(data.finalMultiplier);
       }
+      if (event === 'lunch_voted') {
+        fetchLunchMenu();
+      }
     }
 
+    // 경마 배팅 타이머
     function setupRace(race) {
       isRacing = false;
-      document.getElementById('raceCountTimer').innerText = '⏱️ 배팅 접수 중 (카운트다운)';
       renderBetCards(race.horses);
+      unlockBettingControls();
       drawExcelSheet();
+
+      if (countdownInterval) clearInterval(countdownInterval);
+      const updateTimer = () => {
+        const remainingMs = Math.max(0, race.startTime - Date.now());
+        const sec = Math.ceil(remainingMs / 1000);
+        document.getElementById('raceCountTimer').innerText = `⏱️ 배팅 접수 중: 00:${sec < 10 ? '0' : ''}${sec}`;
+        if (sec <= 0) {
+          clearInterval(countdownInterval);
+        }
+      };
+      updateTimer();
+      countdownInterval = setInterval(updateTimer, 1000);
     }
 
     function renderBetCards(horses) {
@@ -596,17 +790,57 @@
       horses.forEach(h => {
         const card = document.createElement('div');
         card.className = 'bet-card-btn';
+        card.id = `betCard_${h.id}`;
         card.innerHTML = `
           <div class="bet-card-title">${h.emoji} <span>${h.name}</span> <span class="bet-card-odds">${h.odds}배</span></div>
           <div style="font-size: 9px; color: #605e5c;">[${h.dept}]</div>
+          <div class="bet-stat-pool" id="pool_${h.id}">총 ${h.formattedBets || '0'} P (${h.bettorsCount || 0}명)</div>
           <div class="bet-input-wrap">
             <input type="number" id="betAmt_${h.id}" class="bet-input" placeholder="배팅액">
-            <button class="btn-allin" onclick="fillAllIn(${h.id})">올인</button>
+            <button class="btn-allin" id="btnAllin_${h.id}" onclick="fillAllIn(${h.id})">올인</button>
           </div>
-          <button class="btn-bet-confirm" onclick="submitHorseBet(${h.id})">배팅</button>
+          <button class="btn-bet-confirm" id="btnConfirm_${h.id}" onclick="submitHorseBet(${h.id})">배팅</button>
         `;
         container.appendChild(card);
       });
+    }
+
+    function updateBetCardPools(horses) {
+      horses.forEach(h => {
+        const p = document.getElementById(`pool_${h.id}`);
+        if (p) p.innerText = `총 ${h.formattedBets} P (${h.bettorsCount}명)`;
+      });
+    }
+
+    function lockBettingControls() {
+      for (let i = 1; i <= 3; i++) {
+        const inp = document.getElementById(`betAmt_${i}`);
+        const allin = document.getElementById(`btnAllin_${i}`);
+        const confirm = document.getElementById(`btnConfirm_${i}`);
+        if (inp) inp.disabled = true;
+        if (allin) allin.disabled = true;
+        if (confirm) {
+          confirm.disabled = true;
+          confirm.innerText = '🔒 마감';
+        }
+      }
+    }
+
+    function unlockBettingControls() {
+      for (let i = 1; i <= 3; i++) {
+        const inp = document.getElementById(`betAmt_${i}`);
+        const allin = document.getElementById(`btnAllin_${i}`);
+        const confirm = document.getElementById(`btnConfirm_${i}`);
+        if (inp) {
+          inp.disabled = false;
+          inp.value = '';
+        }
+        if (allin) allin.disabled = false;
+        if (confirm) {
+          confirm.disabled = false;
+          confirm.innerText = '배팅';
+        }
+      }
     }
 
     function fillAllIn(horseId) {
@@ -630,7 +864,7 @@
       alert(`${horseId}번에 배팅 완료되었습니다!`);
     }
 
-    // 60FPS 세로 엑셀 달리기 애니메이션
+    // 60FPS 세로 달리기
     function mulberry32(a) {
       return function() {
         var t = a += 0x6D2B79F5;
@@ -642,10 +876,11 @@
 
     function startVerticalRace(seed, durationMs) {
       isRacing = true;
+      if (countdownInterval) clearInterval(countdownInterval);
       document.getElementById('raceCountTimer').innerText = '🔥 실시간 하향 집계 주행 중...';
+      lockBettingControls();
       raceStartTime = performance.now();
 
-      // 물리 타임라인 재현
       const rnd = mulberry32(seed);
       const profiles = currentRace.horses.map(r => ({
         name: r.name,
@@ -707,72 +942,64 @@
       loadWallet();
     }
 
-    // 엑셀 시트 렌더링 함수
     function drawExcelSheet(positions = [0, 0, 0]) {
-      if (!ctx || viewW <= 0 || viewH <= 0) return;
-      ctx.clearRect(0, 0, viewW, viewH);
+      if (!raceCtx || viewW <= 0 || viewH <= 0) return;
+      raceCtx.clearRect(0, 0, viewW, viewH);
 
       const laneW = (viewW - ROW_HEADER_W) / 3;
 
-      // 1. 열 헤더 (A, B, C)
-      ctx.fillStyle = '#f3f2f1';
-      ctx.fillRect(0, 0, viewW, HEADER_H);
-      ctx.fillStyle = '#e1dfdd';
-      ctx.fillRect(0, 0, ROW_HEADER_W, HEADER_H);
+      raceCtx.fillStyle = '#f3f2f1';
+      raceCtx.fillRect(0, 0, viewW, HEADER_H);
+      raceCtx.fillStyle = '#e1dfdd';
+      raceCtx.fillRect(0, 0, ROW_HEADER_W, HEADER_H);
 
-      ctx.strokeStyle = '#d2d0ce';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(0, 0, ROW_HEADER_W, HEADER_H);
+      raceCtx.strokeStyle = '#d2d0ce';
+      raceCtx.lineWidth = 1;
+      raceCtx.strokeRect(0, 0, ROW_HEADER_W, HEADER_H);
 
       const colLetters = ['B', 'C', 'D'];
       for (let i = 0; i < 3; i++) {
         const x = ROW_HEADER_W + i * laneW;
-        ctx.strokeRect(x, 0, laneW, HEADER_H);
-        ctx.fillStyle = '#323130';
-        ctx.font = 'bold 11px "Segoe UI", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        raceCtx.strokeRect(x, 0, laneW, HEADER_H);
+        raceCtx.fillStyle = '#323130';
+        raceCtx.font = 'bold 11px "Segoe UI", sans-serif';
+        raceCtx.textAlign = 'center';
+        raceCtx.textBaseline = 'middle';
 
         const racer = currentRace ? currentRace.horses[i] : null;
         const label = racer ? `${colLetters[i]}열 (${racer.emoji} ${racer.name})` : `${colLetters[i]}열`;
-        ctx.fillText(label, x + laneW / 2, HEADER_H / 2);
+        raceCtx.fillText(label, x + laneW / 2, HEADER_H / 2);
       }
 
-      // 2. 세로 1~15 행 그리드
       for (let r = 0; r < TOTAL_ROWS; r++) {
         const y = HEADER_H + r * ROW_H;
+        raceCtx.fillStyle = '#f3f2f1';
+        raceCtx.fillRect(0, y, ROW_HEADER_W, ROW_H);
+        raceCtx.strokeStyle = '#d2d0ce';
+        raceCtx.strokeRect(0, y, ROW_HEADER_W, ROW_H);
 
-        // 행 헤더
-        ctx.fillStyle = '#f3f2f1';
-        ctx.fillRect(0, y, ROW_HEADER_W, ROW_H);
-        ctx.strokeStyle = '#d2d0ce';
-        ctx.strokeRect(0, y, ROW_HEADER_W, ROW_H);
+        raceCtx.fillStyle = (r === TOTAL_ROWS - 1) ? '#d83b01' : '#605e5c';
+        raceCtx.font = (r === TOTAL_ROWS - 1) ? 'bold 10px Consolas' : '10px Consolas';
+        raceCtx.textAlign = 'center';
+        raceCtx.textBaseline = 'middle';
+        raceCtx.fillText(String(r + 1), ROW_HEADER_W / 2, y + ROW_H / 2);
 
-        ctx.fillStyle = (r === TOTAL_ROWS - 1) ? '#d83b01' : '#605e5c';
-        ctx.font = (r === TOTAL_ROWS - 1) ? 'bold 10px Consolas' : '10px Consolas';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(String(r + 1), ROW_HEADER_W / 2, y + ROW_H / 2);
-
-        // 레인 셀
         for (let c = 0; c < 3; c++) {
           const x = ROW_HEADER_W + c * laneW;
-          ctx.fillStyle = (r === TOTAL_ROWS - 1) ? '#fff1ec' : '#ffffff';
-          ctx.fillRect(x, y, laneW, ROW_H);
-          ctx.strokeStyle = '#e1dfdd';
-          ctx.strokeRect(x, y, laneW, ROW_H);
+          raceCtx.fillStyle = (r === TOTAL_ROWS - 1) ? '#fff1ec' : '#ffffff';
+          raceCtx.fillRect(x, y, laneW, ROW_H);
+          raceCtx.strokeStyle = '#e1dfdd';
+          raceCtx.strokeRect(x, y, laneW, ROW_H);
 
-          // 결승선 라인
           if (r === TOTAL_ROWS - 1) {
-            ctx.fillStyle = '#d83b01';
-            ctx.font = 'bold 10px "Segoe UI"';
-            ctx.textAlign = 'right';
-            ctx.fillText('FINISH 🏁', x + laneW - 8, y + ROW_H / 2);
+            raceCtx.fillStyle = '#d83b01';
+            raceCtx.font = 'bold 10px "Segoe UI"';
+            raceCtx.textAlign = 'right';
+            raceCtx.fillText('FINISH 🏁', x + laneW - 8, y + ROW_H / 2);
           }
         }
       }
 
-      // 3. 세로로 달리는 동물들 그리기
       for (let i = 0; i < 3; i++) {
         const pos = positions[i] || 0;
         const x = ROW_HEADER_W + i * laneW + laneW / 2;
@@ -780,72 +1007,119 @@
 
         const racer = currentRace ? currentRace.horses[i] : null;
         if (racer) {
-          ctx.font = '20px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(racer.emoji, x, y + ROW_H / 2);
+          raceCtx.font = '20px sans-serif';
+          raceCtx.textAlign = 'center';
+          raceCtx.textBaseline = 'middle';
+          raceCtx.fillText(racer.emoji, x, y + ROW_H / 2);
 
-          // 이름 뱃지
-          ctx.font = '9px "Segoe UI"';
-          ctx.fillStyle = '#107c41';
-          ctx.fillText(racer.name, x, y - 2);
+          raceCtx.font = '9px "Segoe UI"';
+          raceCtx.fillStyle = '#107c41';
+          raceCtx.fillText(racer.name, x, y - 2);
         }
       }
     }
 
-    // 이모지 반응
-    function sendReaction(emoji) {
-      const el = document.createElement('div');
-      el.className = 'floating-reaction';
-      el.textContent = emoji;
-      el.style.left = `${Math.random() * 80 + 10}%`;
-      document.getElementById('reactionOverlay').appendChild(el);
-      setTimeout(() => el.remove(), 2300);
-
-      ws.send(JSON.stringify({
-        type: 'chat',
-        payload: { user: { id: currentUserId, name: currentUserName }, text: emoji }
-      }));
-    }
-
-    function sendChatMessage() {
-      const input = document.getElementById('chatMsgInput');
-      const text = input.value.trim();
-      if (!text) return;
-      ws.send(JSON.stringify({
-        type: 'chat',
-        payload: { user: { id: currentUserId, name: currentUserName }, text }
-      }));
-      input.value = '';
-    }
-
-    // 에비에이터 관련
+    // 🚀 Aviator 차트 렌더러
     function updateAviatorBoarding(data) {
+      isFlying = false;
+      currentMultiplier = 1.00;
+      aviatorHistory = [{ t: 0, mult: 1.00 }];
       document.getElementById('flightBadge').innerText = '탑승 수속 중';
       document.getElementById('flightBadge').style.color = '#107c41';
       document.getElementById('aviatorMult').innerText = '1.00x';
       document.getElementById('aviatorMult').classList.remove('crashed');
+      document.getElementById('aviatorSubText').innerText = '15초 후 출발합니다...';
+      document.getElementById('btnAviatorBet').disabled = false;
       document.getElementById('excelCashoutBtn').style.display = 'none';
-      const plane = document.getElementById('excelPlane');
-      plane.style.left = '20px';
-      plane.style.bottom = '20px';
+      drawAviatorChart();
+    }
+
+    function updateAviatorTakeoff() {
+      isFlying = true;
+      document.getElementById('flightBadge').innerText = '비행 중! 💨';
+      document.getElementById('flightBadge').style.color = '#107c41';
+      document.getElementById('btnAviatorBet').disabled = true;
+      drawAviatorChart();
     }
 
     function updateAviatorTick(mult) {
+      currentMultiplier = mult;
       document.getElementById('aviatorMult').innerText = `${mult.toFixed(2)}x`;
-      const progress = Math.min(80, (mult - 1) * 15);
-      const plane = document.getElementById('excelPlane');
-      plane.style.left = `${20 + progress * 0.7}%`;
-      plane.style.bottom = `${20 + progress * 0.6}%`;
+      document.getElementById('aviatorSubText').innerText = '가속 곡선 상승 중...';
+      aviatorHistory.push({ t: aviatorHistory.length * 0.1, mult });
+      drawAviatorChart();
     }
 
     function updateAviatorCrash(mult) {
+      isFlying = false;
+      currentMultiplier = mult;
       document.getElementById('aviatorMult').innerText = `CRASHED (${mult.toFixed(2)}x)`;
       document.getElementById('aviatorMult').classList.add('crashed');
       document.getElementById('flightBadge').innerText = '폭발!';
       document.getElementById('flightBadge').style.color = '#a80000';
       document.getElementById('excelCashoutBtn').style.display = 'none';
+      document.getElementById('aviatorSubText').innerText = '다음 비행편 대기 중...';
+      drawAviatorChart(true);
       loadWallet();
+    }
+
+    function drawAviatorChart(isCrashed = false) {
+      if (!avCtx || avW <= 0 || avH <= 0) return;
+      avCtx.clearRect(0, 0, avW, avH);
+
+      // 격자선
+      avCtx.strokeStyle = '#edebe9';
+      avCtx.lineWidth = 1;
+      for (let x = 0; x < avW; x += 40) {
+        avCtx.beginPath(); avCtx.moveTo(x, 0); avCtx.lineTo(x, avH); avCtx.stroke();
+      }
+      for (let y = 0; y < avH; y += 40) {
+        avCtx.beginPath(); avCtx.moveTo(0, y); avCtx.lineTo(avW, y); avCtx.stroke();
+      }
+
+      if (aviatorHistory.length === 0) return;
+
+      const maxMult = Math.max(2.0, currentMultiplier * 1.2);
+      const getX = (idx) => Math.min(avW - 40, (idx / Math.max(100, aviatorHistory.length)) * (avW - 60) + 20);
+      const getY = (m) => avH - 20 - ((m - 1) / (maxMult - 1)) * (avH - 60);
+
+      // 면적 채우기
+      avCtx.beginPath();
+      avCtx.moveTo(20, avH - 20);
+      for (let i = 0; i < aviatorHistory.length; i++) {
+        avCtx.lineTo(getX(i), getY(aviatorHistory[i].mult));
+      }
+      const lastX = getX(aviatorHistory.length - 1);
+      const lastY = getY(currentMultiplier);
+      avCtx.lineTo(lastX, avH - 20);
+      avCtx.closePath();
+
+      const grad = avCtx.createLinearGradient(0, 0, 0, avH);
+      if (isCrashed) {
+        grad.addColorStop(0, 'rgba(168, 0, 0, 0.35)');
+        grad.addColorStop(1, 'rgba(168, 0, 0, 0.05)');
+      } else {
+        grad.addColorStop(0, 'rgba(16, 124, 65, 0.35)');
+        grad.addColorStop(1, 'rgba(16, 124, 65, 0.05)');
+      }
+      avCtx.fillStyle = grad;
+      avCtx.fill();
+
+      // 상승 곡선 선
+      avCtx.beginPath();
+      avCtx.moveTo(20, avH - 20);
+      for (let i = 0; i < aviatorHistory.length; i++) {
+        avCtx.lineTo(getX(i), getY(aviatorHistory[i].mult));
+      }
+      avCtx.strokeStyle = isCrashed ? '#a80000' : '#107c41';
+      avCtx.lineWidth = 3;
+      avCtx.stroke();
+
+      // 비행기 아이콘
+      avCtx.font = '24px sans-serif';
+      avCtx.textAlign = 'center';
+      avCtx.textBaseline = 'middle';
+      avCtx.fillText(isCrashed ? '💥' : '✈️', lastX + 10, lastY - 10);
     }
 
     function submitAviatorBet() {
@@ -871,6 +1145,58 @@
       }));
     }
 
+    // 🍱 점심 식단 조회 및 투표
+    async function fetchLunchMenu() {
+      try {
+        const res = await fetch('/api/lunch');
+        const data = await res.json();
+        if (!data.ok || !data.day) return;
+
+        const day = data.day;
+        document.getElementById('lunchDateTitle').innerText = `🍱 사내 점심 식단표 (${day.date} ${day.dow}요일)`;
+        const grid = document.getElementById('lunchGrid');
+        grid.innerHTML = '';
+
+        const dateKey = `${day.date}_${day.dow}`;
+        const votes = data.votes || {};
+
+        (day.lunch || []).forEach(c => {
+          const cornerName = c.corner || '메뉴 코너';
+          const voters = votes[cornerName] || [];
+          const isMyVote = voters.includes(currentUserId);
+
+          const card = document.createElement('div');
+          card.className = 'corner-card';
+          card.innerHTML = `
+            <div>
+              <div class="corner-title">
+                <span>${cornerName}</span>
+                <span style="font-size: 11px; color: #d83b01;">❤️ ${voters.length}표</span>
+              </div>
+              <ul class="corner-items">
+                ${(c.items || []).map(item => `<li>• ${item}</li>`).join('')}
+              </ul>
+            </div>
+            <button class="btn-lunch-vote ${isMyVote ? 'voted' : ''}" onclick="submitLunchVote('${dateKey}', '${cornerName}')">
+              ${isMyVote ? '✅ 내가 투표함' : '👍 이 코너로 투표'}
+            </button>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (e) {
+        console.error('fetchLunchMenu error:', e);
+      }
+    }
+
+    async function submitLunchVote(date, corner) {
+      await fetch('/api/lunch/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, corner, userId: currentUserId })
+      });
+      fetchLunchMenu();
+    }
+
     // 탭 전환
     function switchMainTab(tabKey) {
       document.querySelectorAll('.ribbon-tab').forEach(b => b.classList.remove('active'));
@@ -881,12 +1207,14 @@
       const sTab = document.getElementById(`sheetTab-${tabKey}`);
       if (sTab) sTab.classList.add('active');
 
-      if (tabKey === 'race') {
-        setTimeout(resizeCanvas, 50);
+      if (tabKey === 'race' || tabKey === 'aviator') {
+        setTimeout(resizeCanvases, 50);
       } else if (tabKey === 'ranking') {
         loadRanking();
       } else if (tabKey === 'titles') {
         loadTitles();
+      } else if (tabKey === 'lunch') {
+        fetchLunchMenu();
       }
     }
 
@@ -895,7 +1223,7 @@
       const data = await res.json();
       if (data.ok) {
         userWallet = data.wallet;
-        document.getElementById('userPointsDisplay').innerText = `${data.wallet.formattedPoints} P`;
+        document.getElementById('userPointsDisplay').innerText = `${currentUserName} (${data.wallet.formattedPoints} P)`;
       }
     }
 
@@ -963,6 +1291,51 @@
         alert(`[${data.activeTitle}] 칭호를 장착했습니다!`);
         loadWallet();
       }
+    }
+
+    // 모달 관리
+    function openProfileModal() {
+      document.getElementById('modalUserId').innerText = currentUserId;
+      document.getElementById('modalNicknameInput').value = currentUserName;
+      document.getElementById('profileModal').style.display = 'flex';
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').style.display = 'none';
+    }
+
+    function saveProfile() {
+      const newName = document.getElementById('modalNicknameInput').value.trim();
+      if (!newName) return alert('닉네임을 입력해주세요.');
+      currentUserName = newName;
+      localStorage.setItem('excel_user_name', newName);
+      closeProfileModal();
+      loadWallet();
+    }
+
+    function sendReaction(emoji) {
+      const el = document.createElement('div');
+      el.className = 'floating-reaction';
+      el.textContent = emoji;
+      el.style.left = `${Math.random() * 80 + 10}%`;
+      document.getElementById('reactionOverlay').appendChild(el);
+      setTimeout(() => el.remove(), 2300);
+
+      ws.send(JSON.stringify({
+        type: 'chat',
+        payload: { user: { id: currentUserId, name: currentUserName }, text: emoji }
+      }));
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chatMsgInput');
+      const text = input.value.trim();
+      if (!text) return;
+      ws.send(JSON.stringify({
+        type: 'chat',
+        payload: { user: { id: currentUserId, name: currentUserName }, text }
+      }));
+      input.value = '';
     }
   </script>
 </body>
