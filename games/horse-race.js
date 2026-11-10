@@ -35,6 +35,14 @@ function formatKoreanNumber(val) {
     if (bn < 10000n) return (isNegative ? '-' : '') + bn.toLocaleString();
 
     const units = [
+      { val: 10n ** 48n, name: '극' },
+      { val: 10n ** 44n, name: '재' },
+      { val: 10n ** 40n, name: '정' },
+      { val: 10n ** 36n, name: '간' },
+      { val: 10n ** 32n, name: '구' },
+      { val: 10n ** 28n, name: '양' },
+      { val: 10n ** 24n, name: '자' },
+      { val: 10n ** 20n, name: '해' },
       { val: 10n ** 16n, name: '경' },
       { val: 10n ** 12n, name: '조' },
       { val: 10n ** 8n, name: '억' },
@@ -651,8 +659,8 @@ function initHorseRace(bot, helpers) {
     if (!race || race.state !== 'betting') return false;
 
     const trimmed = text.trim();
-    // 패턴 매칭: "1번 3000", "1 5000", "2번 올인", "3번 1만", "1번 5천", "2번 1억", "3 1조", "/배팅 1 3000" 등
-    const match = trimmed.match(/^(?:\/배팅\s+|\/bet\s+)?([1-3])(?:번)?\s+([0-9만천억조경kK,.]+|올인|all)$/i);
+    // 패턴 매칭: "1번 3000", "1 5000", "2번 올인", "3번 1만", "1번 5천", "2번 1억", "3 1조", "1번 1해" 등
+    const match = trimmed.match(/^(?:\/배팅\s+|\/bet\s+)?([1-3])(?:번)?\s+([0-9만천억조경해자양구간정재극kK,.]+|올인|all)$/i);
     if (!match) return false;
 
     const horseId = parseInt(match[1], 10);
@@ -664,9 +672,25 @@ function initHorseRace(bot, helpers) {
     if (rawAmount === '올인' || rawAmount === 'all') {
       isAllIn = true;
     } else {
-      // 단위 변환: 경, 조, 억, 만, 천, k 처리
+      // 단위 변환: 극, 재, 정, 간, 구, 양, 자, 해, 경, 조, 억, 만, 천, k 처리
       let numStr = rawAmount.replace(/,/g, '');
-      if (numStr.endsWith('경')) {
+      if (numStr.endsWith('극')) {
+        amount = Math.floor(parseFloat(numStr.replace('극', '')) * 1e48);
+      } else if (numStr.endsWith('재')) {
+        amount = Math.floor(parseFloat(numStr.replace('재', '')) * 1e44);
+      } else if (numStr.endsWith('정')) {
+        amount = Math.floor(parseFloat(numStr.replace('정', '')) * 1e40);
+      } else if (numStr.endsWith('간')) {
+        amount = Math.floor(parseFloat(numStr.replace('간', '')) * 1e36);
+      } else if (numStr.endsWith('구')) {
+        amount = Math.floor(parseFloat(numStr.replace('구', '')) * 1e32);
+      } else if (numStr.endsWith('양')) {
+        amount = Math.floor(parseFloat(numStr.replace('양', '')) * 1e28);
+      } else if (numStr.endsWith('자')) {
+        amount = Math.floor(parseFloat(numStr.replace('자', '')) * 1e24);
+      } else if (numStr.endsWith('해')) {
+        amount = Math.floor(parseFloat(numStr.replace('해', '')) * 1e20);
+      } else if (numStr.endsWith('경')) {
         amount = Math.floor(parseFloat(numStr.replace('경', '')) * 1e16);
       } else if (numStr.endsWith('조')) {
         amount = Math.floor(parseFloat(numStr.replace('조', '')) * 1e12);

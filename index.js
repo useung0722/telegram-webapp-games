@@ -184,6 +184,14 @@ function formatKoreanNumber(val) {
     if (bn < 10000n) return (isNegative ? '-' : '') + bn.toLocaleString();
 
     const units = [
+      { val: 10n ** 48n, name: '극' },
+      { val: 10n ** 44n, name: '재' },
+      { val: 10n ** 40n, name: '정' },
+      { val: 10n ** 36n, name: '간' },
+      { val: 10n ** 32n, name: '구' },
+      { val: 10n ** 28n, name: '양' },
+      { val: 10n ** 24n, name: '자' },
+      { val: 10n ** 20n, name: '해' },
       { val: 10n ** 16n, name: '경' },
       { val: 10n ** 12n, name: '조' },
       { val: 10n ** 8n, name: '억' },
