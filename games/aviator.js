@@ -167,25 +167,26 @@ function getLobbyKeyboard() {
 // 비행 중 텍스트 & 아스키 궤적 생성
 function getFlightText(game) {
   const mult = game.currentMultiplier.toFixed(2);
-  const step = Math.max(0, Math.min(10, Math.floor(game.tick || 0)));
+  const flightSec = (game.elapsedMs / 1000).toFixed(1);
+  const step = Math.max(0, Math.min(10, Math.floor((game.elapsedMs || 0) / 1000)));
   const trail = '━'.repeat(step);
 
   let passengerStatus = [];
   for (const b of game.bets.values()) {
     if (b.cashedOut) {
-      passengerStatus.push(`• 🪂 **${b.name}**: **${b.cashMultiplier.toFixed(2)}x** 탈출 성공! (+${formatKoreanNumber(b.payout)} P)`);
+      passengerStatus.push(`• 🪂 **${b.name}**: **${b.cashMultiplier.toFixed(2)}x** 탈출 성공! (+${formatKoreanNumber(b.profit)} P 이익)`);
     } else {
       passengerStatus.push(`• ✈️ **${b.name}**: 탑승 중... (${formatKoreanNumber(b.amount)} P)`);
     }
   }
 
   return `✈️ **FLYING HIGH... [제 ${game.flightNo}편]** ✈️\n\n` +
-    `📈 **현재 배수**:  🚀 **\`${mult}x\`**\n` +
+    `📈 **현재 배수**:  🚀 **\`${mult}x\`** (${flightSec}초 경과)\n` +
     `🛫 **고도 궤적**:  \`${trail}✈️\`\n\n` +
     `━━━━━━━━━━━━━━━\n` +
     `👥 **탑승자 현황**:\n${passengerStatus.join('\n')}\n` +
     `━━━━━━━━━━━━━━━\n` +
-    `⚡️ 언제 터질지 모릅니다! 아래 버튼을 눌러 탈출하세요!`;
+    `⚡️ 언제 터질지 모릅니다! 버튼을 누르면 **서버 실시간 배율**로 즉시 탈출합니다!`;
 }
 
 // 비행 중 키보드 (실시간 탈출 버튼)
@@ -254,8 +255,12 @@ function initAviator(bot, helpers) {
 
     game.state = 'flying';
     game.tick = 0;
+    game.startTime = Date.now();
+    game.elapsedMs = 0;
     game.currentMultiplier = 1.00;
     game.crashMultiplier = generateCrashPoint(hasRichPassenger, sessionType);
+    game.lastTelegramUpdate = Date.now();
+    game.isEditingMessage = false;
 
     // 이전 대기실 카드 정리
     if (game.lastLobbyMessageId) {
@@ -280,27 +285,22 @@ function initAviator(bot, helpers) {
       return;
     }
 
-    // 2.2초 주기 갱신 타이머 (텔레그램 Rate Limit 안전)
-    const interval = setInterval(async () => {
-      game.tick++;
+    // ⚡ 100ms (0.1초) 초정밀 서버 틱 루프
+    const TICK_INTERVAL = 100; // 0.1초 서버 계산 주기
+    const TELEGRAM_SYNC_INTERVAL = 2000; // 2초 주기 텔레그램 화면 갱신
 
-      // 배수 점프 곡선 (초반엔 완만, 갈수록 가속)
-      let stepIncrease;
-      if (game.currentMultiplier < 2.0) {
-        stepIncrease = 0.25 + Math.random() * 0.20;
-      } else if (game.currentMultiplier < 5.0) {
-        stepIncrease = 0.45 + Math.random() * 0.40;
-      } else if (game.currentMultiplier < 10.0) {
-        stepIncrease = 0.90 + Math.random() * 0.80;
-      } else {
-        stepIncrease = 2.00 + Math.random() * 2.00;
-      }
+    const flightTimer = setInterval(async () => {
+      // 1) 0.1초 단위 시간 경과 및 수학적 배수 계산
+      // t초 경과 시: 배수 = e^(0.10 * t) 곡선 (실제 크래시 게임 표준 지수 모델, 배율 상승 가속)
+      // 0초: 1.00x, 2초: ~1.22x, 5초: ~1.65x, 10초: ~2.72x, 20초: ~7.39x, 30초: ~20.09x
+      game.elapsedMs = Date.now() - game.startTime;
+      const tSec = game.elapsedMs / 1000;
+      const calculatedMult = Math.exp(0.10 * tSec);
+      game.currentMultiplier = Math.round(calculatedMult * 100) / 100;
 
-      game.currentMultiplier = Math.round((game.currentMultiplier + stepIncrease) * 100) / 100;
-
-      // 폭발(Crash) 감지
+      // 2) 실시간 폭발(Crash) 감지 (0.1초 단위로 정확히 감지)
       if (game.currentMultiplier >= game.crashMultiplier) {
-        clearInterval(interval);
+        clearInterval(flightTimer);
         game.state = 'crashed';
         const finalCrash = game.crashMultiplier.toFixed(2);
 
@@ -344,7 +344,7 @@ function initAviator(bot, helpers) {
             game.flightMessageId,
             null,
             `💥💥 **BOOM!! [제 ${game.flightNo}편 폭발!]** 💥💥\n\n` +
-            `비행기가 **\`${finalCrash}x\`** 고도에서 공중 분해되었습니다!\n` +
+            `비행기가 **\`${finalCrash}x\`** (${(game.elapsedMs / 1000).toFixed(1)}초) 고도에서 공중 분해되었습니다!\n` +
             `\`━━━━━━━━━💥💨💨\``,
             { parse_mode: 'Markdown' }
           );
@@ -352,7 +352,7 @@ function initAviator(bot, helpers) {
 
         // 최종 정산표 전송
         let resultText = `📋 **[제 ${game.flightNo}편 비행 기록 & 정산]**\n\n` +
-          `🏁 **폭발 고도**: **${finalCrash}x**\n\n` +
+          `🏁 **폭발 고도**: **${finalCrash}x** (${(game.elapsedMs / 1000).toFixed(1)}초)\n\n` +
           `━━━━━━━━━━━━━━━\n`;
 
         if (survivors.length > 0) {
@@ -380,20 +380,29 @@ function initAviator(bot, helpers) {
         return;
       }
 
-      // 비행 계속: 메시지 갱신
-      try {
-        await bot.telegram.editMessageText(
-          chatId,
-          game.flightMessageId,
-          null,
-          getFlightText(game),
-          {
-            parse_mode: 'Markdown',
-            ...getFlightKeyboard(game.currentMultiplier)
-          }
-        );
-      } catch (e) {}
-    }, 2200);
+      // 3) 2초 주기 텔레그램 화면 메시지 갱신 (Rate Limit 방어 & 논블로킹)
+      const now = Date.now();
+      if (now - game.lastTelegramUpdate >= TELEGRAM_SYNC_INTERVAL && !game.isEditingMessage) {
+        game.lastTelegramUpdate = now;
+        game.isEditingMessage = true;
+        try {
+          await bot.telegram.editMessageText(
+            chatId,
+            game.flightMessageId,
+            null,
+            getFlightText(game),
+            {
+              parse_mode: 'Markdown',
+              ...getFlightKeyboard(game.currentMultiplier)
+            }
+          );
+        } catch (e) {
+          // 동일 텍스트 수정 에러 등 무시
+        } finally {
+          game.isEditingMessage = false;
+        }
+      }
+    }, TICK_INTERVAL);
   }
 
   // 배팅 처리 함수
