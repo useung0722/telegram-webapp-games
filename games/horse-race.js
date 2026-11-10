@@ -102,10 +102,7 @@ function getHorseLosses(name) {
 }
 
 function getHorseCurrentOdds(racer) {
-  const losses = getHorseLosses(racer.name);
-  if (losses === 0) return racer.odds;
-  const calculated = racer.odds * Math.pow(2, losses);
-  return Math.round(calculated * 10) / 10;
+  return racer.odds;
 }
 
 function recordRaceResult(winnerName, participantNames) {
@@ -115,9 +112,9 @@ function recordRaceResult(winnerName, participantNames) {
     }
     if (name === winnerName) {
       horseStats[name].wins = (horseStats[name].wins || 0) + 1;
-      horseStats[name].consecutiveLosses = 0; // 우승 시 연패 초기화 (원점 복귀)
+      horseStats[name].consecutiveLosses = 0;
     } else {
-      horseStats[name].consecutiveLosses = (horseStats[name].consecutiveLosses || 0) + 1; // 패배 시 연패 누적 (*2배)
+      horseStats[name].consecutiveLosses = (horseStats[name].consecutiveLosses || 0) + 1;
     }
   }
   saveHorseStats();
@@ -130,32 +127,24 @@ const RACER_POOL = [
     emoji: '🐆',
     title: '총알탄치타',
     trait: '선행도주',
-    desc: '초반 폭발적 질주, 후반 체력 방전 위험',
+    desc: '초반 4턴 폭발적 질주, 후반 체력 방전 위험',
     odds: 1.8,
     calcStep: (turn, h) => {
-      if (turn <= 3) {
-        const step = Math.random() < 0.75 ? 2 : 3;
+      if (turn <= 4) {
+        const step = Math.random() < 0.65 ? 2 : 3;
         const effect = (step === 3) ? '💥' : '💨';
         const msg = (step === 3) ? '초반 폭풍 부스터 폭발!!' : '초반 질주!';
         return { step, effect, msg };
       } else {
-        if (Math.random() < 0.3) {
+        const r = Math.random();
+        if (r < 0.25) {
           return { step: 0, effect: '💦', msg: '혓바닥 내밀고 탈진...' };
         }
-        return { step: 1, effect: '━', msg: '지친 몸으로 터덜터덜' };
+        if (r < 0.80) {
+          return { step: 1, effect: '━', msg: '지친 몸으로 터덜터덜' };
+        }
+        return { step: 2, effect: '💨', msg: '마지막 남은 힘으로 질주!' };
       }
-    }
-  },
-  {
-    name: '경주마',
-    emoji: '🐎',
-    title: '야근탈출마',
-    trait: '안정균형',
-    desc: '언제나 1~2칸씩 꾸준히 달리는 모범생',
-    odds: 2.2,
-    calcStep: (turn, h) => {
-      const step = Math.random() < 0.45 ? 2 : 1;
-      return { step, effect: (step === 2 ? '💨' : '━'), msg: (step === 2 ? '안정적인 스퍼트!' : '페이스 유지') };
     }
   },
   {
@@ -164,13 +153,40 @@ const RACER_POOL = [
     title: '어흥맹호',
     trait: '맹수돌진',
     desc: '고른 속도로 달리다 가끔 포효하며 폭주',
-    odds: 2.5,
+    odds: 2.2,
     calcStep: (turn, h) => {
-      if (Math.random() < 0.28) {
+      if (Math.random() < 0.08) {
         return { step: 3, effect: '🔥', msg: '어흥!! 맹수의 포효 돌진!' };
       }
-      const step = Math.random() < 0.5 ? 2 : 1;
+      const step = Math.random() < 0.35 ? 2 : 1;
       return { step, effect: (step === 2 ? '💨' : '━'), msg: '침착하게 추격' };
+    }
+  },
+  {
+    name: '경주마',
+    emoji: '🐎',
+    title: '야근탈출마',
+    trait: '안정균형',
+    desc: '언제나 1~2칸씩 꾸준히 달리는 모범생',
+    odds: 2.4,
+    calcStep: (turn, h) => {
+      const step = Math.random() < 0.45 ? 2 : 1;
+      return { step, effect: (step === 2 ? '💨' : '━'), msg: (step === 2 ? '안정적인 스퍼트!' : '페이스 유지') };
+    }
+  },
+  {
+    name: '토끼',
+    emoji: '🐇',
+    title: '도발토끼',
+    trait: '낮잠복불복',
+    desc: '엄청 빠르지만 40% 확률로 졸면서 땡땡이',
+    odds: 2.8,
+    calcStep: (turn, h) => {
+      if (Math.random() < 0.40) {
+        return { step: 0, effect: '💤', msg: '잔디밭에서 쿨쿨 낮잠 중...' };
+      }
+      const step = Math.random() < 0.25 ? 3 : 2;
+      return { step, effect: (step === 3 ? '✨' : '💨'), msg: '번개 뜀박질로 폴짝폴짝!' };
     }
   },
   {
@@ -184,24 +200,15 @@ const RACER_POOL = [
       if (turn <= 3) {
         return { step: 1, effect: '━', msg: '조용히 눈치 살피는 중' };
       } else {
-        const step = Math.random() < 0.6 ? 2 : 3;
-        return { step, effect: (step === 3 ? '🌪️' : '💨'), msg: '사냥 모드 발동!! 맹추격!' };
+        const r = Math.random();
+        if (r < 0.05) {
+          return { step: 3, effect: '🌪️', msg: '사냥 모드 발동!! 맹추격!' };
+        }
+        if (r < 0.55) {
+          return { step: 2, effect: '💨', msg: '스피드를 올리며 추격!' };
+        }
+        return { step: 1, effect: '━', msg: '추격 페이스 유지' };
       }
-    }
-  },
-  {
-    name: '토끼',
-    emoji: '🐇',
-    title: '도발토끼',
-    trait: '낮잠복불복',
-    desc: '엄청 빠르지만 30% 확률로 졸면서 땡땡이',
-    odds: 3.8,
-    calcStep: (turn, h) => {
-      if (Math.random() < 0.3) {
-        return { step: 0, effect: '💤', msg: '잔디밭에서 쿨쿨 낮잠 중...' };
-      }
-      const step = Math.random() < 0.5 ? 2 : 3;
-      return { step, effect: (step === 3 ? '✨' : '💨'), msg: '번개 뜀박질로 폴짝폴짝!' };
     }
   },
   {
@@ -212,7 +219,7 @@ const RACER_POOL = [
     desc: '느릿하지만 지치지 않고 묵직하게 밀고감',
     odds: 4.5,
     calcStep: (turn, h) => {
-      const step = Math.random() < 0.4 ? 2 : 1;
+      const step = Math.random() < 0.35 ? 2 : 1;
       return { step, effect: (step === 2 ? '💨' : '━'), msg: '간식 생각하며 묵묵히 전진' };
     }
   },
@@ -225,14 +232,14 @@ const RACER_POOL = [
     odds: 6.5,
     calcStep: (turn, h) => {
       if (turn <= 4) {
-        const step = Math.random() < 0.7 ? 1 : 0;
+        const step = Math.random() < 0.45 ? 1 : 0;
         return { step, effect: (step === 0 ? '🐢' : '━'), msg: (step === 0 ? '제자리 걸음...' : '엉금엉금 기어가는 중') };
       } else {
         const r = Math.random();
-        if (r < 0.45) {
+        if (r < 0.08) {
           return { step: 4, effect: '🚀', msg: '🔥 용궁 부스터 점화!! 4칸 대역전 질주!' };
         }
-        if (r < 0.75) {
+        if (r < 0.25) {
           return { step: 3, effect: '💥', msg: '기적의 스퍼트 발동!' };
         }
         return { step: 1, effect: '━', msg: '마지막까지 포기하지 않음' };
@@ -247,10 +254,10 @@ const RACER_POOL = [
     desc: '기어가다 번개 맞으면 워프(5칸) 발동!',
     odds: 9.0,
     calcStep: (turn, h) => {
-      if (Math.random() < 0.16) {
+      if (Math.random() < 0.11) {
         return { step: 5, effect: '⚡️', msg: '🌀 시공간 왜곡 워프 발동!! (+5칸 텔레포트)' };
       }
-      const step = Math.random() < 0.4 ? 1 : 0;
+      const step = Math.random() < 0.30 ? 1 : 0;
       return { step, effect: '━', msg: (step === 0 ? '점액질 분비 중...' : '1mm씩 조심스럽게 전진') };
     }
   }
@@ -265,11 +272,9 @@ let raceCounter = 1;
 function getRaceBettingText(race) {
   const horseList = race.horses.map((h, i) => {
     const wins = getHorseWins(h.name);
-    const losses = getHorseLosses(h.name);
     const winBadge = wins > 0 ? ` | 🏆 ${wins}승` : ' | 🏆 0승';
-    const streakBadge = losses > 0 ? ` 🔥 ${losses}연패 보너스(×${Math.pow(2, losses)}배)` : '';
     return `${i + 1}번 ${h.emoji} **${h.title}** (${h.name})\n` +
-           `   • 배당: **${h.odds}x**${streakBadge} | 특성: **[${h.trait}]**${winBadge}\n` +
+           `   • 배당: **${h.odds}x** | 특성: **[${h.trait}]**${winBadge}\n` +
            `   • _${h.desc}_`;
   }).join('\n\n');
 
