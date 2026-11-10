@@ -211,6 +211,14 @@ wss.on('connection', (ws) => {
         ws.send(JSON.stringify({ event: 'aviator_cashout_result', data: result }));
       }
 
+      if (type === 'reaction') {
+        broadcast('reaction_event', {
+          user: user.name,
+          emoji: payload.emoji,
+          lanePosition: payload.lanePosition || 'center' // 'left' | 'center' | 'right'
+        });
+      }
+
       if (type === 'chat') {
         broadcast('chat_message', {
           user: user.name,

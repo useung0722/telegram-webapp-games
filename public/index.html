@@ -151,30 +151,30 @@
       display: block;
     }
 
-    /* 💖 응원 이모지 오버레이 */
+    /* 💖 응원 이모지 오버레이 (화면 전폭 커버) */
     .reaction-overlay {
       position: absolute;
-      bottom: 145px;
-      right: 16px;
-      width: 140px;
-      height: 280px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       pointer-events: none;
       overflow: hidden;
-      z-index: 50;
+      z-index: 60;
     }
     .floating-reaction {
       position: absolute;
-      bottom: 0;
-      font-size: 26px;
-      animation: floatUp 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      bottom: 10px;
+      font-size: 38px;
+      animation: floatUp 2.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
       pointer-events: none;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35));
     }
     @keyframes floatUp {
-      0% { opacity: 0; transform: translateY(0) scale(0.6); }
-      15% { opacity: 1; transform: translateY(-30px) scale(1.2); }
-      80% { opacity: 0.9; transform: translateY(-200px) scale(1); }
-      100% { opacity: 0; transform: translateY(-260px) scale(0.8); }
+      0% { opacity: 0; transform: translateY(0) scale(0.6) rotate(0deg); }
+      15% { opacity: 1; transform: translateY(-40px) scale(1.3) rotate(-8deg); }
+      75% { opacity: 0.95; transform: translateY(-280px) scale(1.1) rotate(8deg); }
+      100% { opacity: 0; transform: translateY(-380px) scale(0.8) rotate(-4deg); }
     }
 
     /* 하단 실시간 배팅 콘솔 */
@@ -469,8 +469,41 @@
       border-top: 2px solid #107c41;
     }
 
-    /* 팝업 모달 */
-    .modal-overlay {
+    /* 1초 자동 소멸 엑셀 토스트 팝업 */
+    .excel-toast-container {
+      position: fixed;
+      top: 45px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .excel-toast {
+      background: #107c41;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 4px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: toastFade 1s forwards ease-in-out;
+      pointer-events: auto;
+    }
+    .excel-toast.error {
+      background: #a80000;
+    }
+    @keyframes toastFade {
+      0% { opacity: 0; transform: translateY(-12px) scale(0.95); }
+      15% { opacity: 1; transform: translateY(0) scale(1); }
+      75% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-8px) scale(0.95); }
+    }
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.4);
@@ -564,11 +597,15 @@
 
         <!-- 하단 실시간 응원 및 챗 -->
         <div class="reaction-bar-row">
-          <div style="display: flex; gap: 4px;">
-            <button class="reaction-emoji-btn" onclick="sendReaction('🔥')">🔥</button>
-            <button class="reaction-emoji-btn" onclick="sendReaction('👏')">👏</button>
-            <button class="reaction-emoji-btn" onclick="sendReaction('🚀')">🚀</button>
-            <button class="reaction-emoji-btn" onclick="sendReaction('💸')">💸</button>
+          <div style="display: flex; gap: 4px; align-items: center; overflow-x: auto;">
+            <span style="font-size: 10px; color: #605e5c; font-weight: bold; margin-right: 2px;">응원:</span>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🔥')">🔥 불꽃</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('👏')">👏 박수</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🚀')">🚀 부스터</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('💸')">💸 돈벼락</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('🎉')">🎉 환호</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('😱')">😱 멘붕</button>
+            <button class="reaction-emoji-btn" onclick="sendReaction('💪')">💪 화이팅</button>
           </div>
           <input type="text" id="chatMsgInput" class="chat-inline-input" placeholder="사내 응원 메시지 입력 후 Enter" onkeydown="if(event.key==='Enter') sendChatMessage()">
         </div>
@@ -746,6 +783,9 @@
       }
       if (event === 'excel_race_finished') {
         finishVerticalRace(data.winner);
+      }
+      if (event === 'reaction_event') {
+        spawnFloatingEmoji(data.emoji, data.lanePosition, data.user);
       }
       if (event === 'aviator_boarding' || (event === 'init_state' && data.aviator && data.aviator.state === 'boarding')) {
         updateAviatorBoarding(data.aviator || data);
@@ -1313,17 +1353,70 @@
       loadWallet();
     }
 
-    function sendReaction(emoji) {
+    // 1초 자동 소멸 토스트 팝업 함수
+    function showToast(message, isError = false) {
+      let container = document.getElementById('toastContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'excel-toast-container';
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = `excel-toast ${isError ? 'error' : ''}`;
+      toast.innerHTML = `<span>${isError ? '⚠️' : '✅'}</span> <span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 1000);
+    }
+
+    // window.alert를 1초 토스트로 대체
+    window.alert = function(msg) {
+      showToast(msg);
+    };
+
+    // 실시간 공유되는 응원 이모지 (좌 / 중 / 우 랜덤 등장)
+    function spawnFloatingEmoji(emoji, lanePosition = 'center', senderName = '') {
+      const overlay = document.getElementById('reactionOverlay');
+      if (!overlay) return;
+
       const el = document.createElement('div');
       el.className = 'floating-reaction';
       el.textContent = emoji;
-      el.style.left = `${Math.random() * 80 + 10}%`;
-      document.getElementById('reactionOverlay').appendChild(el);
-      setTimeout(() => el.remove(), 2300);
 
+      // 좌(15%~30%), 중(40%~60%), 우(70%~85%) 구역 랜덤 지정
+      let baseMin = 40, baseMax = 60;
+      if (lanePosition === 'left') {
+        baseMin = 15; baseMax = 32;
+      } else if (lanePosition === 'right') {
+        baseMin = 68; baseMax = 85;
+      }
+      const randomLeft = Math.floor(Math.random() * (baseMax - baseMin + 1)) + baseMin;
+      el.style.left = `${randomLeft}%`;
+
+      overlay.appendChild(el);
+      setTimeout(() => el.remove(), 2400);
+    }
+
+    function sendReaction(emoji) {
+      // 왼쪽, 가운데, 오른쪽 중 무작위 선정
+      const positions = ['left', 'center', 'right'];
+      const chosenLane = positions[Math.floor(Math.random() * positions.length)];
+
+      // 내 화면에 즉시 렌더링
+      spawnFloatingEmoji(emoji, chosenLane, currentUserName);
+
+      // 접속 중인 모든 관전자에게 WebSocket 브로드캐스트 전송
       ws.send(JSON.stringify({
-        type: 'chat',
-        payload: { user: { id: currentUserId, name: currentUserName }, text: emoji }
+        type: 'reaction',
+        payload: {
+          user: { id: currentUserId, name: currentUserName },
+          emoji,
+          lanePosition: chosenLane
+        }
       }));
     }
 
