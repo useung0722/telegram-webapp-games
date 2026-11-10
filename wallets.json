@@ -106,5 +106,80 @@
     "activeTitle": "구 19.6만 자산가",
     "legacyPoints": 196940,
     "legacyTitleName": "구 19.6만 자산가"
+  },
+  "test_user": {
+    "name": "손님",
+    "points": 1000000,
+    "lastBeg": 0,
+    "raceCount": 0,
+    "wins": 0,
+    "maxOdds": 0,
+    "maxProfit": 0,
+    "begCount": 0,
+    "bankruptHit": false,
+    "allInWon": false,
+    "unlockedTitles": [],
+    "activeTitle": null
+  },
+  "user_26783": {
+    "name": "이우성",
+    "points": 1218000,
+    "lastBeg": 0,
+    "raceCount": 1,
+    "wins": 1,
+    "maxOdds": 1.2,
+    "maxProfit": 188000,
+    "begCount": 0,
+    "bankruptHit": true,
+    "allInWon": true,
+    "unlockedTitles": [
+      "t_bankrupt",
+      "t_allin"
+    ],
+    "activeTitle": null
+  },
+  "user_83445": {
+    "name": "직원_3445",
+    "points": 97000,
+    "lastBeg": 0,
+    "raceCount": 2,
+    "wins": 1,
+    "maxOdds": 2.21,
+    "maxProfit": 12100,
+    "begCount": 0,
+    "bankruptHit": true,
+    "allInWon": false,
+    "unlockedTitles": [
+      "t_bankrupt"
+    ],
+    "activeTitle": null
+  },
+  "test_auto": {
+    "name": "테스터",
+    "points": 992000,
+    "lastBeg": 0,
+    "raceCount": 1,
+    "wins": 1,
+    "maxOdds": 1.4,
+    "maxProfit": 2000,
+    "begCount": 0,
+    "bankruptHit": false,
+    "allInWon": false,
+    "unlockedTitles": [],
+    "activeTitle": null
+  },
+  "u_tester": {
+    "name": "김과장",
+    "points": 980000,
+    "lastBeg": 0,
+    "raceCount": 0,
+    "wins": 0,
+    "maxOdds": 0,
+    "maxProfit": 0,
+    "begCount": 0,
+    "bankruptHit": false,
+    "allInWon": false,
+    "unlockedTitles": [],
+    "activeTitle": null
   }
 }
